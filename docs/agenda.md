@@ -17,7 +17,7 @@ Times below assume a **09:00 start**; shift as needed.
 | **15:30–16:15** | 0:45 | **Deploy** | `azd up` into the shared RG. First deploy will fail — that's expected. Diagnose with Copilot Chat + `azd` logs. Do smoke test: sign in, list claims, upload a doc, watch the worker export appear in Blob, check App Insights traces |
 | **16:15–16:45** | 0:30 | **Hardening pass** | Fix whatever the smoke test surfaced. Add missing checklist items. Merge `integration` → `main`. |
 | **16:45–17:15** | 0:30 | **Team demo** | Each track drives a 6–7 minute demo of what they modernized, showing Copilot prompts that worked and diffs that mattered. |
-| **17:15–17:00** | 0:15 | **Retro + wrap** | 3 keeps, 3 changes, 3 learnings. Commit `docs/learnings.md`. Optional: log stretch goals as issues for the next sprint. |
+| **17:15–17:30** | 0:15 | **Retro + wrap** | 3 keeps, 3 changes, 3 learnings. Commit `docs/learnings.md`. Optional: log stretch goals as issues for the next sprint. |
 
 ---
 

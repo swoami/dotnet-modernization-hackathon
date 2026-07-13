@@ -25,7 +25,6 @@
     <Reference Include="System.Configuration" />
     <Reference Include="System.Configuration.Install" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Data" />
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
   <ItemGroup>

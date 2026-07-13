@@ -44,11 +44,9 @@
       <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System.Web" />
-    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Configuration" />
     <Reference Include="System" />
-    <Reference Include="System.Data" />
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
@@ -84,6 +82,10 @@
     <ProjectReference Include="..\ContosoInsurance.Data\ContosoInsurance.Data.csproj">
       <Project>{a1000002-0000-0000-0000-000000000002}</Project>
       <Name>ContosoInsurance.Data</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ContosoInsurance.Services\ContosoInsurance.Services.csproj">
+      <Project>{a1000004-0000-0000-0000-000000000004}</Project>
+      <Name>ContosoInsurance.Services</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

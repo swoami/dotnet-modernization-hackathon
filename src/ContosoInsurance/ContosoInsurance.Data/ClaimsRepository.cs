@@ -15,6 +15,13 @@ namespace ContosoInsurance.Data
     /// </summary>
     public class ClaimsRepository
     {
+        private const string ClaimColumns =
+            "c.ClaimId, c.PolicyId, p.PolicyNumber, c.ClaimantName, c.Amount, c.Status, " +
+            "c.FiledOn, c.ClosedOn, c.DocumentPath, c.Score, c.Notes";
+
+        private const string ClaimsFrom =
+            "FROM dbo.Claims c JOIN dbo.Policies p ON p.PolicyId = c.PolicyId";
+
         private readonly string _connectionString;
 
         public ClaimsRepository()
@@ -25,12 +32,8 @@ namespace ContosoInsurance.Data
         public List<Claim> GetRecent(int top = 50)
         {
             var results = new List<Claim>();
-            const string sql = @"SELECT TOP (@Top) c.ClaimId, c.PolicyId, p.PolicyNumber,
-                                        c.ClaimantName, c.Amount, c.Status, c.FiledOn,
-                                        c.ClosedOn, c.DocumentPath, c.Score, c.Notes
-                                 FROM   dbo.Claims c
-                                 JOIN   dbo.Policies p ON p.PolicyId = c.PolicyId
-                                 ORDER BY c.FiledOn DESC";
+            const string sql = "SELECT TOP (@Top) " + ClaimColumns + " " + ClaimsFrom +
+                               " ORDER BY c.FiledOn DESC";
             using (var conn = new SqlConnection(_connectionString))
             using (var cmd = new SqlCommand(sql, conn))
             {
@@ -46,12 +49,8 @@ namespace ContosoInsurance.Data
 
         public Claim GetById(int claimId)
         {
-            const string sql = @"SELECT c.ClaimId, c.PolicyId, p.PolicyNumber,
-                                        c.ClaimantName, c.Amount, c.Status, c.FiledOn,
-                                        c.ClosedOn, c.DocumentPath, c.Score, c.Notes
-                                 FROM   dbo.Claims c
-                                 JOIN   dbo.Policies p ON p.PolicyId = c.PolicyId
-                                 WHERE  c.ClaimId = @Id";
+            const string sql = "SELECT " + ClaimColumns + " " + ClaimsFrom +
+                               " WHERE c.ClaimId = @Id";
             using (var conn = new SqlConnection(_connectionString))
             using (var cmd = new SqlCommand(sql, conn))
             {
@@ -71,10 +70,8 @@ namespace ContosoInsurance.Data
         public List<Claim> SearchByClaimant(string namePart)
         {
             var results = new List<Claim>();
-            var sql = "SELECT c.ClaimId, c.PolicyId, p.PolicyNumber, c.ClaimantName, " +
-                      "c.Amount, c.Status, c.FiledOn, c.ClosedOn, c.DocumentPath, c.Score, c.Notes " +
-                      "FROM dbo.Claims c JOIN dbo.Policies p ON p.PolicyId = c.PolicyId " +
-                      "WHERE c.ClaimantName LIKE '%" + namePart + "%'"; // <-- BAD
+            var sql = "SELECT " + ClaimColumns + " " + ClaimsFrom +
+                      " WHERE c.ClaimantName LIKE '%" + namePart + "%'"; // <-- BAD: user input concatenated into SQL
             using (var conn = new SqlConnection(_connectionString))
             using (var cmd = new SqlCommand(sql, conn))
             {

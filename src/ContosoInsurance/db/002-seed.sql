@@ -1,7 +1,11 @@
 USE ContosoInsurance;
 GO
 
--- Users (SHA1 hashes of 'Password1' + salt — deliberately weak)
+-- Users (placeholder SHA1-style PasswordHash values — deliberately weak scheme.
+-- These are NOT real hashes of any known password; the login flow will fail as-is.
+-- If you want to actually sign in locally, replace the hash column with
+-- LOWER(CONVERT(NVARCHAR(40), HASHBYTES('SHA1', N'Password1' + Salt), 2)) for each row.
+-- The SHA1 + per-user-salt scheme itself is the anti-pattern for appmod to flag.)
 IF NOT EXISTS (SELECT 1 FROM dbo.Users WHERE Username = 'agent1')
 BEGIN
     INSERT INTO dbo.Users (Username, PasswordHash, Salt, Role) VALUES
