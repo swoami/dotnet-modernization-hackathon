@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Legacy Breakers — Live Progress Tracker</title>
+<title>Legacy Breakers — Progress</title>
 <script>
   (() => {
     const param = new URLSearchParams(window.location.search).get("clawpilotTheme");
@@ -66,779 +66,249 @@ html[data-theme="dark"] {
   --cp-highlight: rgba(253, 142, 161, 0.12);
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
 body {
+  margin: 0;
   font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--cp-bg);
   color: var(--cp-text);
-  line-height: 1.45;
   font-size: 14px;
+  line-height: 1.45;
 }
-code, kbd, .mono { font-family: Consolas, "Courier New", Courier, monospace; }
-header.topbar {
-  position: sticky; top: 0; z-index: 20;
-  background: var(--cp-panel-strong);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--cp-border);
-  padding: 12px 24px;
+code { font-family: Consolas, "Courier New", Courier, monospace; }
+main { max-width: 1300px; margin: 0 auto; padding: 24px; }
+h1 { margin: 0; font-size: 20px; font-weight: 600; }
+.sub { color: var(--cp-text-muted); font-size: 12px; margin: 4px 0 16px 0; }
+.overall {
+  background: var(--cp-surface);
+  border: 1px solid var(--cp-border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+  display: flex; align-items: center; gap: 16px;
 }
-.topbar-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.topbar h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
-.topbar .subtitle { color: var(--cp-text-muted); font-size: 12px; }
-.spacer { flex: 1; }
-.btn {
-  appearance: none; border: 1px solid var(--cp-border);
-  background: var(--cp-surface); color: var(--cp-text);
-  padding: 6px 12px; border-radius: 0.625rem; cursor: pointer;
-  font-size: 12px; font-family: inherit;
+.overall .pct { font-size: 32px; font-weight: 700; min-width: 90px; }
+.overall .detail { color: var(--cp-text-muted); font-size: 12px; }
+.bar {
+  flex: 1; height: 10px; border-radius: 999px;
+  background: var(--cp-surface-soft); overflow: hidden;
 }
-.btn:hover { border-color: var(--cp-border-strong); }
-.btn.primary { background: var(--cp-accent); color: var(--cp-accent-fg); border-color: var(--cp-accent); }
-.btn.primary:hover { background: var(--cp-accent-hover); border-color: var(--cp-accent-hover); }
-.btn.ghost { background: transparent; }
-.btn.danger { border-color: var(--cp-danger); color: var(--cp-danger); }
-main { max-width: 1400px; margin: 0 auto; padding: 24px; }
-.hero-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 24px;
+.bar > span { display: block; height: 100%; background: var(--cp-accent); transition: width .3s ease; }
+.bar.full > span { background: var(--cp-success); }
+.timeline {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px;
 }
-@media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr 1fr; } }
-.card {
+.slot {
+  padding: 4px 10px; border-radius: 999px; font-size: 11px;
+  border: 1px solid var(--cp-border); color: var(--cp-text-muted);
+  background: var(--cp-surface);
+}
+.slot.now { background: var(--cp-accent); border-color: var(--cp-accent); color: var(--cp-accent-fg); font-weight: 600; }
+.slot.past { opacity: 0.45; text-decoration: line-through; }
+.grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+@media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } }
+.track {
   background: var(--cp-surface);
   border: 1px solid var(--cp-border);
   border-radius: 16px;
   padding: 16px;
   box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
 }
-.card h3 { margin: 0 0 4px 0; font-size: 12px; font-weight: 600; color: var(--cp-text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-.card .big { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
-.card .sub { font-size: 11px; color: var(--cp-text-soft); }
-.progress {
-  height: 6px; border-radius: 999px; background: var(--cp-surface-soft);
-  overflow: hidden; margin-top: 8px;
-}
-.progress > span { display: block; height: 100%; background: var(--cp-accent); transition: width .3s ease; }
-.progress.warn > span { background: var(--cp-warning); }
-.progress.ok > span { background: var(--cp-success); }
-.section-title {
-  display: flex; align-items: baseline; gap: 12px;
-  margin: 32px 0 12px 0;
-}
-.section-title h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
-.section-title .hint { color: var(--cp-text-muted); font-size: 12px; }
-.track-grid {
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
-}
-@media (max-width: 1100px) { .track-grid { grid-template-columns: 1fr; } }
-.track {
-  background: var(--cp-surface); border: 1px solid var(--cp-border);
-  border-radius: 16px; padding: 16px;
-  box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
-}
-.track h3 {
-  display: flex; align-items: center; gap: 8px;
-  margin: 0 0 4px 0; font-size: 14px; font-weight: 600;
-}
+.track h2 { margin: 0; font-size: 15px; font-weight: 600; display: inline; }
 .track .branch {
-  display: inline-block; padding: 2px 8px; border-radius: 6px;
-  background: var(--cp-accent-soft); color: var(--cp-accent);
   font-family: Consolas, monospace; font-size: 11px;
+  color: var(--cp-accent); background: var(--cp-accent-soft);
+  padding: 2px 8px; border-radius: 6px;
 }
-.track .owners { color: var(--cp-text-muted); font-size: 12px; margin-bottom: 12px; }
-.sprint {
-  margin-top: 16px; border-top: 1px dashed var(--cp-border); padding-top: 12px;
-}
-.sprint h4 {
-  margin: 0 0 8px 0; font-size: 12px; font-weight: 600;
-  color: var(--cp-text-muted); text-transform: uppercase; letter-spacing: 0.05em;
-  display: flex; align-items: center; gap: 8px;
-}
-.sprint h4 .count { color: var(--cp-text-soft); font-weight: 500; }
+.track .bar { margin: 10px 0 12px 0; }
+.phase { margin: 12px 0 4px 0; font-size: 11px; font-weight: 600; color: var(--cp-text-soft); text-transform: uppercase; letter-spacing: 0.05em; }
 .task {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 8px;
-  padding: 8px;
-  border-radius: 8px;
-  align-items: start;
+  display: flex; gap: 8px; align-items: baseline;
+  padding: 5px 6px; border-radius: 8px; font-size: 13px;
 }
 .task:hover { background: var(--cp-surface-soft); }
-.task input[type="checkbox"] { margin-top: 3px; cursor: pointer; }
-.task .title { font-size: 13px; }
-.task.done .title { text-decoration: line-through; color: var(--cp-text-soft); }
-.task.blocked { background: rgba(220, 38, 38, 0.06); }
-.task.blocked .title { color: var(--cp-danger); }
-.task .id {
-  font-family: Consolas, monospace; font-size: 10px;
-  color: var(--cp-text-soft); margin-right: 6px;
-}
-.task .auto-chip {
-  display: inline-block; margin-left: 6px; padding: 1px 6px;
-  border-radius: 999px; font-size: 9px; letter-spacing: 0.04em;
-  background: var(--cp-accent-soft); color: var(--cp-accent);
-  vertical-align: 1px; text-transform: uppercase;
-}
-.task input[type="checkbox"]:disabled { cursor: default; }
-.task .state-btns { display: flex; gap: 4px; }
-.state-btn {
-  appearance: none; border: 1px solid var(--cp-border);
-  background: transparent; color: var(--cp-text-muted);
-  width: 22px; height: 22px; border-radius: 6px; cursor: pointer;
-  font-size: 12px; padding: 0; display: inline-flex;
-  align-items: center; justify-content: center;
-}
-.state-btn:hover { color: var(--cp-text); border-color: var(--cp-border-strong); }
-.state-btn.active-block { color: var(--cp-danger); border-color: var(--cp-danger); background: rgba(220,38,38,0.08); }
-.notes-btn { color: var(--cp-text-soft); }
-.notes {
-  grid-column: 2 / -1;
-  margin-top: 4px;
-  display: none;
-}
-.task.notes-open .notes { display: block; }
-.notes textarea {
-  width: 100%; min-height: 60px; padding: 6px 8px;
-  border: 1px solid var(--cp-border); border-radius: 8px;
-  background: var(--cp-bg-elevated); color: var(--cp-text);
-  font-family: inherit; font-size: 12px; resize: vertical;
-}
-.checklist-block {
-  margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--cp-border);
-}
-.checklist-block h4 {
-  margin: 0 0 8px 0; font-size: 12px; font-weight: 600;
-  color: var(--cp-text-muted); text-transform: uppercase; letter-spacing: 0.05em;
-}
-.timeline {
-  display: grid;
-  grid-template-columns: 120px 1fr auto auto;
-  gap: 8px 12px;
-  align-items: center;
-  font-size: 13px;
-}
-.timeline .slot { font-family: Consolas, monospace; color: var(--cp-text-muted); font-size: 12px; }
-.timeline .name { font-weight: 500; }
-.timeline .status {
-  font-size: 11px; padding: 2px 8px; border-radius: 999px;
-  background: var(--cp-surface-soft); color: var(--cp-text-muted);
-}
-.timeline .status.now { background: var(--cp-accent); color: var(--cp-accent-fg); }
-.timeline .status.past { background: rgba(22,163,74,0.12); color: var(--cp-success); }
-.timeline .row {
-  display: contents;
-}
-.timeline .row.past { opacity: 0.6; }
-.checkpoint-grid {
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
-}
-@media (max-width: 1100px) { .checkpoint-grid { grid-template-columns: 1fr; } }
-.badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 8px; border-radius: 999px; font-size: 11px;
-  border: 1px solid var(--cp-border); color: var(--cp-text-muted);
-  background: var(--cp-surface-soft);
-}
-.badge.ok { border-color: var(--cp-success); color: var(--cp-success); background: rgba(22,163,74,0.08); }
-.badge.warn { border-color: var(--cp-warning); color: var(--cp-warning); background: rgba(245,158,11,0.08); }
-.badge.err { border-color: var(--cp-danger); color: var(--cp-danger); background: rgba(220,38,38,0.08); }
-details.legend {
-  margin-top: 24px; padding: 12px 16px;
-  border: 1px solid var(--cp-border); border-radius: 12px;
-  background: var(--cp-bg-elevated);
-}
-details.legend summary { cursor: pointer; font-weight: 600; font-size: 13px; }
-details.legend ul { margin: 8px 0 0 0; padding-left: 20px; font-size: 12px; color: var(--cp-text-muted); }
-footer {
-  padding: 24px; text-align: center; color: var(--cp-text-soft); font-size: 11px;
-}
-.toast {
-  position: fixed; bottom: 20px; right: 20px;
-  background: var(--cp-panel-strong); border: 1px solid var(--cp-border);
-  padding: 10px 16px; border-radius: 10px; box-shadow: var(--cp-shadow);
-  font-size: 13px; opacity: 0; transform: translateY(10px);
-  transition: all .25s ease; pointer-events: none; z-index: 100;
-}
-.toast.show { opacity: 1; transform: translateY(0); }
-@media print {
-  header.topbar { position: static; box-shadow: none; }
-  .btn, .state-btn, .notes-btn { display: none !important; }
-  .task .state-btns { display: none; }
-  .notes { display: none !important; }
-  main { max-width: 100%; }
-}
+.task.done { color: var(--cp-text-soft); text-decoration: line-through; }
+.task .mark { width: 16px; text-align: center; flex: none; }
+.task .mark input { cursor: pointer; margin: 0; }
+.task.done .mark { color: var(--cp-success); text-decoration: none; }
+.foot { margin-top: 24px; color: var(--cp-text-soft); font-size: 12px; }
 </style>
 </head>
 <body>
-
-<header class="topbar">
-  <div class="topbar-row">
-    <div>
-      <h1>Legacy Breakers — Progress Tracker</h1>
-      <div class="subtitle" id="dateline">Full-day .NET modernization hackathon</div>
-    </div>
-    <div class="spacer"></div>
-    <button class="btn ghost" id="themeToggle" title="Toggle light/dark">Theme</button>
-    <button class="btn ghost" id="exportBtn" title="Download progress as JSON">Export</button>
-    <button class="btn ghost" id="importBtn" title="Load progress from JSON">Import</button>
-    <input type="file" id="importFile" accept="application/json" style="display:none" />
-    <button class="btn ghost" id="printBtn" title="Print / save PDF">Print</button>
-    <button class="btn danger" id="resetBtn" title="Clear all progress">Reset</button>
-  </div>
-</header>
-
 <main>
+  <h1>Legacy Breakers — Progress</h1>
+  <div class="sub" id="status">loading…</div>
 
-  <!-- KPI cards -->
-  <section class="hero-grid" id="kpis"></section>
-
-  <!-- Agenda timeline -->
-  <div class="section-title">
-    <h2>Agenda timeline</h2>
-    <span class="hint">Everything shows <strong>upcoming</strong> until event day (14 July); on the day, <strong>NOW</strong> follows wall-clock time.</span>
+  <div class="overall">
+    <div class="pct" id="pct">0%</div>
+    <div class="bar" id="obar"><span style="width:0%"></span></div>
+    <div class="detail" id="detail"></div>
   </div>
-  <section class="card">
-    <div class="timeline" id="timeline"></div>
-  </section>
 
-  <!-- Track cards -->
-  <div class="section-title">
-    <h2>Tracks</h2>
-    <span class="hint">Tasks tagged <strong>auto</strong> are detected from the repository as branches are pushed. The rest are manual: tick when done, 🚫 blocked, 📝 notes.</span>
-  </div>
-  <section class="track-grid" id="tracks"></section>
+  <div class="timeline" id="timeline"></div>
 
-  <!-- Checkpoints -->
-  <div class="section-title">
-    <h2>Team checkpoints</h2>
-    <span class="hint">Facilitator-led at the times shown. Every box must be green before moving on.</span>
-  </div>
-  <section class="checkpoint-grid" id="checkpoints"></section>
+  <div class="grid" id="tracks"></div>
 
-  <details class="legend">
-    <summary>How this tracker works</summary>
-    <ul>
-      <li><strong>Auto-detection from the repo.</strong> Run <code>pwsh docs/scan-progress.ps1 -Watch -Fetch</code> (facilitator laptop). It fetches <code>origin</code>, inspects the <code>track/*</code>, <code>integration</code>, and <code>main</code> branches, and writes <code>docs/tracker-status.js</code>. This page reloads it every 60&nbsp;s — tasks tagged <em>auto</em> flip to done as the team pushes.</li>
-      <li><strong>Manual tasks.</strong> Items that can't be detected from code (assess runs, CVE scan, deploy smoke tests) keep their checkbox; that state lives in your browser's <code>localStorage</code>.</li>
-      <li><strong>Blocked tasks</strong> subtract from overall progress and light the KPI card red. Unblock by clicking 🚫 again.</li>
-      <li><strong>Notes</strong> per task are handy for capturing prompts and gotchas you'll paste into <code>docs/learnings.md</code> at the retro.</li>
-      <li><strong>Export/Import</strong> moves the manual state between laptops. <strong>Print</strong> gives a snapshot for scoring against <code>docs/rubric.md</code>.</li>
-    </ul>
-  </details>
-
+  <p class="foot">
+    Tasks flip to ✓ automatically as branches are pushed — run
+    <code>pwsh docs/scan-progress.ps1 -Watch -Fetch</code> on the facilitator laptop.
+    Only the two “Assess” tasks are ticked by hand.
+  </p>
 </main>
 
-<footer>
-  Contoso Insurance modernization • v1 •
-  Source of truth: <code>docs/task-briefs.md</code>, <code>docs/agenda.md</code>
-</footer>
-
-<div class="toast" id="toast"></div>
-
 <script>
-// ---------- data model ----------
-
-// Event day. Before this date everything shows "upcoming"; after it, "done".
 const EVENT_DATE = "2026-07-14";
 
 const AGENDA = [
-  { slot: "09:00–09:30", name: "Kickoff",              start: "09:00", end: "09:30" },
-  { slot: "09:30–10:00", name: "Guided demo",          start: "09:30", end: "10:00" },
-  { slot: "10:00–10:15", name: "Split + brief",        start: "10:00", end: "10:15" },
-  { slot: "10:15–12:30", name: "Sprint 1 — Upgrade",   start: "10:15", end: "12:30" },
-  { slot: "12:30–13:15", name: "Lunch + CP1",          start: "12:30", end: "13:15" },
-  { slot: "13:15–15:15", name: "Sprint 2 — Azure",     start: "13:15", end: "15:15" },
-  { slot: "15:15–15:30", name: "Checkpoint 2",         start: "15:15", end: "15:30" },
-  { slot: "15:30–16:15", name: "Deploy (azd up)",      start: "15:30", end: "16:15" },
-  { slot: "16:15–16:45", name: "Hardening pass",       start: "16:15", end: "16:45" },
-  { slot: "16:45–17:15", name: "Team demo",            start: "16:45", end: "17:15" },
-  { slot: "17:15–17:30", name: "Retro + wrap",         start: "17:15", end: "17:30" },
+  ["09:00", "09:30", "Kickoff"],
+  ["09:30", "10:00", "Demo"],
+  ["10:00", "10:15", "Split"],
+  ["10:15", "12:30", "Sprint 1 — Upgrade"],
+  ["12:30", "13:15", "Lunch + CP1"],
+  ["13:15", "15:15", "Sprint 2 — Azure"],
+  ["15:15", "15:30", "CP2"],
+  ["15:30", "16:15", "Deploy"],
+  ["16:15", "16:45", "Hardening"],
+  ["16:45", "17:15", "Demo"],
+  ["17:15", "17:30", "Retro"],
 ];
 
+// manual: true → ticked by hand (stored in localStorage); otherwise repo-detected.
 const TRACKS = [
-  {
-    id: "A",
-    name: "Track A — Web + API tier",
-    branch: "track/a-web-api",
-    scope: "Web, Services, Data (shared), Common (shared)",
-    sprints: {
-      "Sprint 1 — Upgrade": [
-        { id: "A1",  title: "Assess ContosoInsurance.Web and ContosoInsurance.Services with the appmod extension" },
-        { id: "A2",  title: "Convert Web + Services + Data + Common .csproj to SDK-style, target net9.0" },
-        { id: "A3",  title: "Delete packages.config; migrate to PackageReference" },
-        { id: "A4",  title: "Remove log4net; replace Newtonsoft.Json with System.Text.Json (or latest safe Newtonsoft)" },
-        { id: "A5",  title: "Convert Web.config → appsettings.json + IConfiguration; drop machineKey / sessionState / authentication sections" },
-        { id: "A6",  title: "Convert WebForms (Default.aspx, Login.aspx, Upload.aspx) → Razor Pages (stretch: Blazor Server)" },
-        { id: "A7",  title: "Replace WCF IClaimScoringService with ASP.NET Core minimal API POST /claims/{id}/score" },
-        { id: "A8",  title: "Introduce ContosoDbContext with DbSet<Claim>, DbSet<Policy>, DbSet<User> (coordinate name with Track B)" },
-        { id: "A9",  title: "Replace Forms Auth with ASP.NET Core cookie auth (stretch: Entra ID via Microsoft.Identity.Web)" },
-      ],
-      "Sprint 2 — Azure migration": [
-        { id: "A10", title: "Swap SQL to Managed Identity: Authentication=Active Directory Default, no user/password" },
-        { id: "A11", title: "Replace log4net with AddApplicationInsightsTelemetry + ILogger<T> across Common / Web / Services" },
-        { id: "A12", title: "Remove all Trace.* calls" },
-        { id: "A13", title: "Add /health endpoint returning Healthy if DbContext connects" },
-      ],
-    },
-    doneChecklist: [
-      { id: "A-D1", title: "Web, Services, Data, Common target net9.0" },
-      { id: "A-D2", title: "No packages.config, no Web.config anywhere" },
-      { id: "A-D3", title: "Program.cs composes the app with DI, config, logging, cookie auth" },
-      { id: "A-D4", title: "ContosoDbContext in use; ADO.NET removed from Data/" },
-      { id: "A-D5", title: "Concat-SQL SearchByClaimant converted to a safe query" },
-      { id: "A-D6", title: "SHA1 password hashing replaced with modern KDF (PBKDF2 / Identity) or Entra ID stretch" },
-      { id: "A-D7", title: "ILogger everywhere; log4net removed" },
-      { id: "A-D8", title: "Scoring endpoint answers over HTTP JSON; no more WCF client" },
+  { name: "Track A — Web + API", branch: "track/a-web-api", phases: {
+    "Sprint 1": [
+      { id: "A1", t: "Assess Web + Services (appmod)", manual: true },
+      { id: "A2", t: "SDK-style csproj, net9.0" },
+      { id: "A3", t: "packages.config → PackageReference" },
+      { id: "A4", t: "Drop log4net / old Newtonsoft" },
+      { id: "A5", t: "Web.config → appsettings.json" },
+      { id: "A6", t: "WebForms → Razor Pages" },
+      { id: "A7", t: "WCF → minimal API /claims/{id}/score" },
+      { id: "A8", t: "EF Core ContosoDbContext" },
+      { id: "A9", t: "Cookie auth replaces Forms Auth" },
     ],
-  },
-  {
-    id: "B",
-    name: "Track B — Worker + Storage",
-    branch: "track/b-worker-storage",
-    scope: "Worker, Blob wiring, Data (shared)",
-    sprints: {
-      "Sprint 1 — Upgrade": [
-        { id: "B1",  title: "Assess ContosoInsurance.Worker with the appmod extension" },
-        { id: "B2",  title: "Convert Worker .csproj to SDK-style, target net9.0" },
-        { id: "B3",  title: "Drop System.ServiceProcess and ProjectInstaller.cs" },
-        { id: "B4",  title: "Convert ClaimsExporterService : ServiceBase → BackgroundService via Host.CreateApplicationBuilder" },
-        { id: "B5",  title: "Replace System.Timers.Timer with PeriodicTimer / IHostApplicationLifetime loop" },
-        { id: "B6",  title: "Move App.config values into appsettings.json + strongly-typed ExportOptions" },
-        { id: "B7",  title: "Replace log4net with ILogger<ClaimsExporterService> (coordinate with Track A on Common)" },
-      ],
-      "Sprint 2 — Azure migration": [
-        { id: "B8",  title: "Add Azure.Storage.Blobs + Azure.Identity; BlobServiceClient with DefaultAzureCredential (no connection strings)" },
-        { id: "B9",  title: "Replace File.WriteAllText with BlobContainerClient.UploadBlobAsync into claim-exports" },
-        { id: "B10", title: "Extract IClaimDocumentStore in Common; Upload page also writes to Blob claim-docs (coordinate with Track A)" },
-        { id: "B11", title: "Add AddApplicationInsightsTelemetryWorkerService() in the worker host" },
-        { id: "B12", title: "Persist an ExportLog row after each successful upload via shared DbContext" },
-      ],
-    },
-    doneChecklist: [
-      { id: "B-D1", title: "Worker targets net9.0, runs as BackgroundService" },
-      { id: "B-D2", title: "No ServiceBase, ProjectInstaller, or System.Timers.Timer" },
-      { id: "B-D3", title: "App.config gone; appsettings.json + typed options" },
-      { id: "B-D4", title: "Exports written to Blob container claim-exports via Managed Identity" },
-      { id: "B-D5", title: "Uploads (from Web) written to Blob container claim-docs" },
-      { id: "B-D6", title: "ExportLog row inserted per export" },
-      { id: "B-D7", title: "ILogger everywhere; log4net removed" },
+    "Sprint 2": [
+      { id: "A10", t: "SQL via Managed Identity" },
+      { id: "A11", t: "App Insights + ILogger" },
+      { id: "A12", t: "Remove Trace.* calls" },
+      { id: "A13", t: "/health endpoint" },
+    ]}},
+  { name: "Track B — Worker + Storage", branch: "track/b-worker-storage", phases: {
+    "Sprint 1": [
+      { id: "B1", t: "Assess Worker (appmod)", manual: true },
+      { id: "B2", t: "SDK-style csproj, net9.0" },
+      { id: "B3", t: "Drop ServiceBase + ProjectInstaller" },
+      { id: "B4", t: "BackgroundService host" },
+      { id: "B5", t: "PeriodicTimer loop" },
+      { id: "B6", t: "App.config → appsettings.json" },
+      { id: "B7", t: "ILogger in worker" },
     ],
-  },
-  {
-    id: "C",
-    name: "Track C — Platform (IaC, CI/CD, identity, observability)",
-    branch: "track/c-platform",
-    scope: "azure.yaml, infra/, Dockerfiles, GitHub Actions, RBAC",
-    sprints: {
-      "Sprint 1 — Foundation": [
-        { id: "C1",  title: "Run azd init at src/ContosoInsurance/ (or repo root); produces azure.yaml + infra/ skeleton" },
-        { id: "C2",  title: "Generate Dockerfiles: Web (SDK→aspnet), Services (if separate), Worker (SDK→runtime, no ASP.NET)" },
-        { id: "C3",  title: "Draft infra/main.bicep: Log Analytics, App Insights, ACR, user-assigned MI, ACA env, container apps, Azure SQL + DB + AAD admin, Key Vault, Storage + claim-docs/claim-exports containers, role assignments" },
-      ],
-      "Sprint 2 — Cloud readiness": [
-        { id: "C4",  title: "Wire App Insights connection string into all Container Apps as env var" },
-        { id: "C5",  title: "Wire MI-based SQL connection string (server-only) as env var" },
-        { id: "C6",  title: "Wire Storage account name as env var (container names derived)" },
-        { id: "C7",  title: "Any remaining secrets → Key Vault; referenced via Container Apps secrets with keyVaultUrl + identity" },
-        { id: "C8",  title: "GitHub Actions .github/workflows/deploy.yml: OIDC login, dotnet build + test, azd deploy on push to main" },
-        { id: "C9",  title: "docs/README-DEPLOY.md with azd up / rollback / redeploy commands + post-deploy verification" },
-      ],
-    },
-    doneChecklist: [
-      { id: "C-D1", title: "azure.yaml at repo (or src/) root" },
-      { id: "C-D2", title: "infra/main.bicep + main.bicepparam provisioning full stack" },
-      { id: "C-D3", title: "Dockerfiles for each container-hosted service" },
-      { id: "C-D4", title: "User-assigned managed identity attached to all Container Apps" },
-      { id: "C-D5", title: "MI has: Blob Data Contributor, AcrPull, Key Vault Secrets User, SQL DB user" },
-      { id: "C-D6", title: "App Insights + Log Analytics deployed and wired" },
-      { id: "C-D7", title: "No secrets in Bicep parameters, azure.yaml, or GitHub Actions (except OIDC creds)" },
-      { id: "C-D8", title: ".github/workflows/deploy.yml builds + deploys on push to main" },
-      { id: "C-D9", title: "docs/README-DEPLOY.md documents deploy commands" },
+    "Sprint 2": [
+      { id: "B8", t: "Azure.Storage.Blobs + Azure.Identity" },
+      { id: "B9", t: "Exports → Blob claim-exports" },
+      { id: "B10", t: "IClaimDocumentStore; uploads → claim-docs" },
+      { id: "B11", t: "App Insights (worker service)" },
+      { id: "B12", t: "ExportLog row per export" },
+    ]}},
+  { name: "Track C — Platform", branch: "track/c-platform", phases: {
+    "Sprint 1": [
+      { id: "C1", t: "azd init → azure.yaml" },
+      { id: "C2", t: "Dockerfiles (Web, Worker, Services)" },
+      { id: "C3", t: "main.bicep: ACA, SQL, Storage, KV, MI" },
     ],
-  },
+    "Sprint 2": [
+      { id: "C4", t: "App Insights env var wired" },
+      { id: "C5", t: "MI SQL connection env var" },
+      { id: "C6", t: "Storage account env var" },
+      { id: "C7", t: "Key Vault secret references" },
+      { id: "C8", t: "GitHub Actions deploy (OIDC)" },
+      { id: "C9", t: "README-DEPLOY.md" },
+    ]}},
 ];
 
-const CHECKPOINTS = [
-  {
-    id: "CP1",
-    when: "12:30",
-    title: "Checkpoint 1 — end of Sprint 1",
-    items: [
-      { id: "CP1-1", title: "All projects target net9.0 and are SDK-style" },
-      { id: "CP1-2", title: "packages.config is gone everywhere" },
-      { id: "CP1-3", title: "No High/Critical CVEs remain in `dotnet list package --vulnerable`" },
-      { id: "CP1-4", title: "appsettings.json scaffolded for Web, Services, Worker" },
-      { id: "CP1-5", title: "EF Core ContosoDbContext compiles; at least GetRecent migrated" },
-      { id: "CP1-6", title: "Track C has azure.yaml, an empty infra/ folder, and a Docker plan drafted" },
-    ],
-  },
-  {
-    id: "CP2",
-    when: "15:15",
-    title: "Checkpoint 2 — pre-deploy",
-    items: [
-      { id: "CP2-1", title: "All three branches merged into integration; solution builds" },
-      { id: "CP2-2", title: "Managed Identity code path in place (no SQL password in config)" },
-      { id: "CP2-3", title: "Blob Storage client wired for uploads and exports (behind a config flag)" },
-      { id: "CP2-4", title: "App Insights connection string flows via config; ILogger writes to it" },
-      { id: "CP2-5", title: "Bicep provisions: ACA env, ACR, Azure SQL, Key Vault, App Insights, Log Analytics, MI, role assignments" },
-      { id: "CP2-6", title: "Dockerfiles present for Web, Services (or its replacement), Worker" },
-      { id: "CP2-7", title: "GitHub Actions workflow drafted (build + azd deploy on push to main)" },
-    ],
-  },
-  {
-    id: "CP3",
-    when: "16:15",
-    title: "Post-deploy smoke test",
-    items: [
-      { id: "CP3-1", title: "Web app reachable, login works, claims list renders" },
-      { id: "CP3-2", title: "Upload → file lands in Blob claim-docs" },
-      { id: "CP3-3", title: "Worker → export file lands in Blob claim-exports within one interval" },
-      { id: "CP3-4", title: "Traces / requests visible in App Insights" },
-      { id: "CP3-5", title: "No secrets in appsettings; all sensitive values via MI or Key Vault" },
-    ],
-  },
-];
+const KEY = "legacy-breakers-manual-v2";
+let manual = {};
+try { manual = JSON.parse(localStorage.getItem(KEY)) || {}; } catch { manual = {}; }
+let repo = window.REPO_STATUS || null;
 
-// ---------- state ----------
+const allTasks = TRACKS.flatMap(tr => Object.values(tr.phases).flat());
 
-const STATE_KEY = "legacy-breakers-tracker-v1";
-const defaultState = () => ({
-  tasks: {},   // id -> { done: bool, blocked: bool, note: string }
-  meta: { updatedAt: null },
-});
-let state = load();
+function isDone(task) {
+  if (task.manual) return !!manual[task.id];
+  return !!(repo && repo.tasks && repo.tasks[task.id]);
+}
 
-function load() {
-  try {
-    const raw = localStorage.getItem(STATE_KEY);
-    if (!raw) return defaultState();
-    const parsed = JSON.parse(raw);
-    return { ...defaultState(), ...parsed, tasks: parsed.tasks || {} };
-  } catch { return defaultState(); }
+function bar(done, total) {
+  const pct = total ? Math.round(100 * done / total) : 0;
+  return `<div class="bar ${pct === 100 ? "full" : ""}"><span style="width:${pct}%"></span></div>`;
 }
-function save() {
-  state.meta.updatedAt = new Date().toISOString();
-  localStorage.setItem(STATE_KEY, JSON.stringify(state));
+
+function render() {
+  // overall
+  const done = allTasks.filter(isDone).length;
+  const pct = Math.round(100 * done / allTasks.length);
+  document.getElementById("pct").textContent = pct + "%";
+  document.getElementById("obar").outerHTML = `<div class="bar ${pct === 100 ? "full" : ""}" id="obar"><span style="width:${pct}%"></span></div>`;
+  document.getElementById("detail").textContent = `${done} of ${allTasks.length} tasks`;
+
+  // timeline
+  const today = new Date().toISOString().slice(0, 10);
+  const mins = today < EVENT_DATE ? -1 : today > EVENT_DATE ? 1441 :
+    new Date().getHours() * 60 + new Date().getMinutes();
+  const toMin = s => +s.slice(0, 2) * 60 + +s.slice(3);
+  document.getElementById("timeline").innerHTML = AGENDA.map(([s, e, n]) => {
+    const cls = mins >= toMin(e) ? "past" : (mins >= toMin(s) ? "now" : "");
+    return `<span class="slot ${cls}">${s} ${n}</span>`;
+  }).join("");
+
+  // tracks
+  document.getElementById("tracks").innerHTML = TRACKS.map(tr => {
+    const tasks = Object.values(tr.phases).flat();
+    const d = tasks.filter(isDone).length;
+    const phases = Object.entries(tr.phases).map(([ph, list]) => `
+      <div class="phase">${ph}</div>
+      ${list.map(task => {
+        const dn = isDone(task);
+        const mark = task.manual
+          ? `<input type="checkbox" data-id="${task.id}" ${dn ? "checked" : ""}>`
+          : (dn ? "✓" : "·");
+        return `<div class="task ${dn ? "done" : ""}"><span class="mark">${mark}</span><span>${task.t}</span></div>`;
+      }).join("")}`).join("");
+    return `<div class="track">
+      <h2>${tr.name}</h2> <span class="branch">${tr.branch}</span>
+      ${bar(d, tasks.length)}
+      ${phases}
+    </div>`;
+  }).join("");
+
+  // status line
+  const day = today < EVENT_DATE ? `event day: ${EVENT_DATE}` :
+              today > EVENT_DATE ? "event finished" : "event day — live";
+  const scan = repo
+    ? `repo scan ${new Date(repo.generatedAt).toLocaleTimeString()}`
+    : "repo scan not run yet";
+  document.getElementById("status").textContent = `${day} • ${scan} • auto-refreshes every 60 s`;
 }
-function taskState(id) {
-  const manual = state.tasks[id] || { done: false, blocked: false, note: "" };
-  // Repo scan is the source of truth for auto-detectable tasks.
-  if (repoStatus && Object.prototype.hasOwnProperty.call(repoStatus.tasks || {}, id)) {
-    return { ...manual, done: !!repoStatus.tasks[id], auto: true };
-  }
-  return manual;
-}
-function setTask(id, patch) {
-  state.tasks[id] = { ...taskState(id), ...patch };
-  save();
+
+document.addEventListener("change", ev => {
+  const id = ev.target.dataset.id;
+  if (!id) return;
+  manual[id] = ev.target.checked;
+  localStorage.setItem(KEY, JSON.stringify(manual));
   render();
-}
-
-// ---------- repo auto-sync ----------
-// docs/scan-progress.ps1 inspects the git branches and writes docs/tracker-status.js
-// (window.REPO_STATUS). The page reloads that file every 60s, so task state is
-// detected from the repository as the team pushes — no manual ticking needed
-// for auto-detectable tasks.
-
-let repoStatus = window.REPO_STATUS || null;
+});
 
 function loadRepoStatus() {
   const s = document.createElement("script");
   s.src = "tracker-status.js?t=" + Date.now();
-  s.onload = () => {
-    if (window.REPO_STATUS) {
-      repoStatus = window.REPO_STATUS;
-      render();
-    }
-    s.remove();
-  };
-  s.onerror = () => s.remove(); // scanner not run yet — manual mode
+  s.onload = () => { if (window.REPO_STATUS) { repo = window.REPO_STATUS; render(); } s.remove(); };
+  s.onerror = () => s.remove();
   document.body.appendChild(s);
 }
 
-// ---------- computed ----------
-
-function allTaskIds() {
-  const ids = [];
-  TRACKS.forEach(t => {
-    Object.values(t.sprints).forEach(list => list.forEach(x => ids.push(x.id)));
-    t.doneChecklist.forEach(x => ids.push(x.id));
-  });
-  CHECKPOINTS.forEach(cp => cp.items.forEach(x => ids.push(x.id)));
-  return ids;
-}
-function counts(ids) {
-  let done = 0, blocked = 0;
-  ids.forEach(id => {
-    const s = taskState(id);
-    if (s.done) done++;
-    if (s.blocked) blocked++;
-  });
-  return { total: ids.length, done, blocked, pct: ids.length ? Math.round(100 * done / ids.length) : 0 };
-}
-function trackIds(track) {
-  const ids = [];
-  Object.values(track.sprints).forEach(list => list.forEach(x => ids.push(x.id)));
-  track.doneChecklist.forEach(x => ids.push(x.id));
-  return ids;
-}
-function sprintIds(track, sprintName) {
-  return track.sprints[sprintName].map(x => x.id);
-}
-
-// ---------- rendering ----------
-
-function progressBar(pct, blocked) {
-  const cls = blocked > 0 ? "warn" : (pct === 100 ? "ok" : "");
-  return `<div class="progress ${cls}"><span style="width:${pct}%"></span></div>`;
-}
-
-function renderKpis() {
-  const overall = counts(allTaskIds());
-  const trackStats = TRACKS.map(t => ({ t, c: counts(trackIds(t)) }));
-
-  document.getElementById("kpis").innerHTML = [
-    `<div class="card">
-       <h3>Overall</h3>
-       <div class="big">${overall.pct}%</div>
-       <div class="sub">${overall.done}/${overall.total} tasks done${overall.blocked ? ` • <span style="color:var(--cp-danger)">${overall.blocked} blocked</span>` : ""}</div>
-       ${progressBar(overall.pct, overall.blocked)}
-     </div>`,
-    ...trackStats.map(({ t, c }) => `
-      <div class="card">
-        <h3>${t.name.replace(/ —.*/, "")}</h3>
-        <div class="big">${c.pct}%</div>
-        <div class="sub">${c.done}/${c.total} tasks${c.blocked ? ` • <span style="color:var(--cp-danger)">${c.blocked} blocked</span>` : ""}</div>
-        ${progressBar(c.pct, c.blocked)}
-      </div>
-    `),
-  ].slice(0, 4).join("");
-}
-
-// Returns minutes-of-day on the event day, or -1 before the event, or 24*60+1 after it.
-function eventClockMinutes() {
-  const today = new Date().toISOString().slice(0, 10);
-  if (today < EVENT_DATE) return -1;
-  if (today > EVENT_DATE) return 24 * 60 + 1;
-  const d = new Date();
-  return d.getHours() * 60 + d.getMinutes();
-}
-function toMinutes(hhmm) {
-  const [h, m] = hhmm.split(":").map(Number);
-  return h * 60 + m;
-}
-
-function renderTimeline() {
-  const now = eventClockMinutes();
-  const html = AGENDA.map(row => {
-    const s = toMinutes(row.start), e = toMinutes(row.end);
-    let cls = "", label = "upcoming";
-    if (now >= s && now < e) { cls = "now"; label = "NOW"; }
-    else if (now >= e)       { cls = "past"; label = "done"; }
-    return `<div class="row ${label === "done" ? "past" : ""}">
-      <div class="slot">${row.slot}</div>
-      <div class="name">${row.name}</div>
-      <div></div>
-      <div class="status ${cls}">${label}</div>
-    </div>`;
-  }).join("");
-  document.getElementById("timeline").innerHTML = html;
-}
-
-function renderTasks(track) {
-  return Object.entries(track.sprints).map(([sprintName, list]) => {
-    const c = counts(sprintIds(track, sprintName));
-    const items = list.map(taskItem).join("");
-    return `<div class="sprint">
-      <h4>${sprintName} <span class="count">(${c.done}/${c.total})</span></h4>
-      ${progressBar(c.pct, c.blocked)}
-      <div style="margin-top:8px">${items}</div>
-    </div>`;
-  }).join("");
-}
-
-function taskItem(task) {
-  const s = taskState(task.id);
-  const cls = [
-    s.done ? "done" : "",
-    s.blocked ? "blocked" : "",
-    s.note ? "notes-open" : "",
-  ].join(" ").trim();
-  const autoChip = s.auto ? `<span class="auto-chip" title="Detected from the repository by scan-progress.ps1">auto</span>` : "";
-  return `<div class="task ${cls}" data-id="${task.id}">
-    <input type="checkbox" ${s.done ? "checked" : ""} ${s.auto ? "disabled title='Detected from the repository — push code to change it'" : 'data-act="toggle-done" title="Mark done"'} />
-    <div class="title"><span class="id">${task.id}</span>${escapeHtml(task.title)}${autoChip}</div>
-    <div class="state-btns">
-      <button class="state-btn ${s.blocked ? "active-block" : ""}" data-act="toggle-blocked" title="Blocked?">🚫</button>
-      <button class="state-btn notes-btn" data-act="toggle-notes" title="Notes">📝</button>
-    </div>
-    <div class="notes">
-      <textarea data-act="note" placeholder="Prompt that worked, gotcha, follow-up…">${escapeHtml(s.note)}</textarea>
-    </div>
-  </div>`;
-}
-
-function renderDoneChecklist(track) {
-  const c = counts(track.doneChecklist.map(x => x.id));
-  const items = track.doneChecklist.map(taskItem).join("");
-  return `<div class="checklist-block">
-    <h4>&quot;Done&quot; checklist <span class="count">(${c.done}/${c.total})</span></h4>
-    ${progressBar(c.pct, c.blocked)}
-    <div style="margin-top:8px">${items}</div>
-  </div>`;
-}
-
-function renderTracks() {
-  document.getElementById("tracks").innerHTML = TRACKS.map(t => {
-    const c = counts(trackIds(t));
-    return `<div class="track" data-track="${t.id}">
-      <h3>${t.name} <span class="branch">${t.branch}</span></h3>
-      <div class="owners">${escapeHtml(t.scope)}</div>
-      ${progressBar(c.pct, c.blocked)}
-      ${renderTasks(t)}
-      ${renderDoneChecklist(t)}
-    </div>`;
-  }).join("");
-}
-
-function renderCheckpoints() {
-  document.getElementById("checkpoints").innerHTML = CHECKPOINTS.map(cp => {
-    const c = counts(cp.items.map(x => x.id));
-    let badge = `<span class="badge">not started</span>`;
-    if (c.blocked > 0) badge = `<span class="badge err">${c.blocked} blocked</span>`;
-    else if (c.done === c.total) badge = `<span class="badge ok">complete</span>`;
-    else if (c.done > 0) badge = `<span class="badge warn">${c.done}/${c.total}</span>`;
-    return `<div class="track">
-      <h3>${cp.title} <span class="branch">${cp.when}</span></h3>
-      <div class="owners">${badge}</div>
-      ${progressBar(c.pct, c.blocked)}
-      <div style="margin-top:8px">${cp.items.map(taskItem).join("")}</div>
-    </div>`;
-  }).join("");
-}
-
-function render() {
-  renderKpis();
-  renderTimeline();
-  renderTracks();
-  renderCheckpoints();
-  const today = new Date().toISOString().slice(0, 10);
-  const dayNote = today < EVENT_DATE ? `event day: ${EVENT_DATE}` :
-                  today > EVENT_DATE ? "event finished" : "event day — live";
-  const scan = repoStatus
-    ? `repo scan: ${new Date(repoStatus.generatedAt).toLocaleTimeString()} (${repoStatus.refs?.team ?? "?"})`
-    : "repo scan: not run — see docs/scan-progress.ps1";
-  document.getElementById("dateline").textContent =
-    `Full-day .NET modernization hackathon • ${dayNote} • ${scan}`;
-}
-
-// ---------- interactions ----------
-
-function escapeHtml(s) {
-  return String(s ?? "").replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
-  }[c]));
-}
-
-document.addEventListener("click", (ev) => {
-  const btn = ev.target.closest("[data-act]");
-  if (!btn) return;
-  const task = ev.target.closest(".task");
-  if (!task) return;
-  const id = task.dataset.id;
-  const act = btn.dataset.act;
-  const s = taskState(id);
-  if (act === "toggle-done") setTask(id, { done: !s.done, blocked: s.done ? s.blocked : false });
-  if (act === "toggle-blocked") setTask(id, { blocked: !s.blocked });
-  if (act === "toggle-notes") {
-    task.classList.toggle("notes-open");
-    const ta = task.querySelector("textarea");
-    if (task.classList.contains("notes-open") && ta) ta.focus();
-  }
-});
-
-document.addEventListener("input", (ev) => {
-  if (ev.target.matches("textarea[data-act='note']")) {
-    const task = ev.target.closest(".task");
-    if (!task) return;
-    const id = task.dataset.id;
-    const cur = taskState(id);
-    state.tasks[id] = { ...cur, note: ev.target.value };
-    // debounce save via microtask
-    clearTimeout(window.__saveT);
-    window.__saveT = setTimeout(() => {
-      save();
-      // don't re-render on every keystroke; just update KPIs occasionally
-      renderKpis();
-    }, 300);
-  }
-});
-
-document.getElementById("themeToggle").addEventListener("click", () => {
-  const cur = document.documentElement.getAttribute("data-theme");
-  const next = cur === "dark" ? "light" : "dark";
-  document.documentElement.setAttribute("data-theme", next);
-});
-
-document.getElementById("exportBtn").addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `tracker-state-${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast("Exported tracker-state JSON");
-});
-
-document.getElementById("importBtn").addEventListener("click", () => {
-  document.getElementById("importFile").click();
-});
-document.getElementById("importFile").addEventListener("change", async (ev) => {
-  const file = ev.target.files[0];
-  if (!file) return;
-  try {
-    const parsed = JSON.parse(await file.text());
-    if (!parsed.tasks) throw new Error("Missing tasks");
-    state = { ...defaultState(), ...parsed, tasks: parsed.tasks };
-    save();
-    render();
-    toast("Imported state");
-  } catch (e) {
-    toast("Import failed: " + e.message);
-  } finally {
-    ev.target.value = "";
-  }
-});
-
-document.getElementById("printBtn").addEventListener("click", () => window.print());
-
-document.getElementById("resetBtn").addEventListener("click", () => {
-  if (!confirm("Clear ALL tracker progress? This cannot be undone.")) return;
-  localStorage.removeItem(STATE_KEY);
-  state = defaultState();
-  render();
-  toast("Reset");
-});
-
-let toastTimer;
-function toast(msg) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), 2000);
-}
-
-// re-render the timeline every minute so NOW moves; re-pull repo scan results
-setInterval(renderTimeline, 60_000);
 setInterval(loadRepoStatus, 60_000);
-
 loadRepoStatus();
 render();
 </script>
-
 </body>
 </html>
