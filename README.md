@@ -15,6 +15,7 @@ using **GitHub Copilot app modernization for .NET** and the **Modernization CLI*
 | `docs/rubric.md` | Demo / evaluation rubric |
 | `docs/reference-solution.md` | Answer key — target modernized state and expected artifacts |
 | `docs/tracker.html` | **Live progress tracker** — open in a browser during the event |
+| `docs/scan-progress.ps1` | Repo scanner that auto-detects finished tasks and feeds the tracker |
 
 ## Target state (post-hackathon)
 
@@ -32,9 +33,11 @@ using **GitHub Copilot app modernization for .NET** and the **Modernization CLI*
 
 1. Facilitators: read `docs/facilitator-guide.md` end-to-end.
 2. Participants: read `docs/pre-read.md` **before** the event.
-3. On the day: follow `docs/agenda.md` and open `docs/tracker.html` in a browser
-   to check tasks off as they land. Use its **Export** button and commit
-   `docs/tracker-state.json` if you want to sync progress across laptops via git.
+3. On the day: follow `docs/agenda.md` and open `docs/tracker.html` in a browser.
+   On the facilitator laptop, run `pwsh docs/scan-progress.ps1 -Watch -Fetch` —
+   it inspects the `track/*` / `integration` / `main` branches every 60 s and the
+   tracker flips tasks to **done automatically as the team pushes**. Tasks that
+   can't be detected from code (assess runs, CVE scan, smoke tests) stay manual.
 
 > This repository intentionally contains outdated packages, insecure patterns, and
 > anti-patterns. **Do not deploy the legacy app to production.**

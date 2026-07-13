@@ -174,6 +174,13 @@ main { max-width: 1400px; margin: 0 auto; padding: 24px; }
   font-family: Consolas, monospace; font-size: 10px;
   color: var(--cp-text-soft); margin-right: 6px;
 }
+.task .auto-chip {
+  display: inline-block; margin-left: 6px; padding: 1px 6px;
+  border-radius: 999px; font-size: 9px; letter-spacing: 0.04em;
+  background: var(--cp-accent-soft); color: var(--cp-accent);
+  vertical-align: 1px; text-transform: uppercase;
+}
+.task input[type="checkbox"]:disabled { cursor: default; }
 .task .state-btns { display: flex; gap: 4px; }
 .state-btn {
   appearance: none; border: 1px solid var(--cp-border);
@@ -289,7 +296,7 @@ footer {
   <!-- Agenda timeline -->
   <div class="section-title">
     <h2>Agenda timeline</h2>
-    <span class="hint">Milestone marked <strong>NOW</strong> reflects wall-clock time.</span>
+    <span class="hint">Everything shows <strong>upcoming</strong> until event day (14 July); on the day, <strong>NOW</strong> follows wall-clock time.</span>
   </div>
   <section class="card">
     <div class="timeline" id="timeline"></div>
@@ -298,7 +305,7 @@ footer {
   <!-- Track cards -->
   <div class="section-title">
     <h2>Tracks</h2>
-    <span class="hint">Toggle each task as you finish it. Right-hand icons: 🚫 mark blocked, 📝 add notes.</span>
+    <span class="hint">Tasks tagged <strong>auto</strong> are detected from the repository as branches are pushed. The rest are manual: tick when done, 🚫 blocked, 📝 notes.</span>
   </div>
   <section class="track-grid" id="tracks"></section>
 
@@ -312,11 +319,11 @@ footer {
   <details class="legend">
     <summary>How this tracker works</summary>
     <ul>
-      <li><strong>Local state.</strong> Progress is saved in your browser's <code>localStorage</code>. Different laptops see different state unless you sync.</li>
-      <li><strong>Sync via git.</strong> Use <strong>Export</strong> to download <code>tracker-state.json</code>, commit it to the repo (e.g. under <code>docs/</code>), and teammates can <strong>Import</strong> it.</li>
-      <li><strong>Blocked tasks</strong> subtract from overall progress and light the KPI card red. Unblock the task by clicking 🚫 again.</li>
+      <li><strong>Auto-detection from the repo.</strong> Run <code>pwsh docs/scan-progress.ps1 -Watch -Fetch</code> (facilitator laptop). It fetches <code>origin</code>, inspects the <code>track/*</code>, <code>integration</code>, and <code>main</code> branches, and writes <code>docs/tracker-status.js</code>. This page reloads it every 60&nbsp;s — tasks tagged <em>auto</em> flip to done as the team pushes.</li>
+      <li><strong>Manual tasks.</strong> Items that can't be detected from code (assess runs, CVE scan, deploy smoke tests) keep their checkbox; that state lives in your browser's <code>localStorage</code>.</li>
+      <li><strong>Blocked tasks</strong> subtract from overall progress and light the KPI card red. Unblock by clicking 🚫 again.</li>
       <li><strong>Notes</strong> per task are handy for capturing prompts and gotchas you'll paste into <code>docs/learnings.md</code> at the retro.</li>
-      <li><strong>Print</strong> gives a clean snapshot for facilitator scoring against <code>docs/rubric.md</code>.</li>
+      <li><strong>Export/Import</strong> moves the manual state between laptops. <strong>Print</strong> gives a snapshot for scoring against <code>docs/rubric.md</code>.</li>
     </ul>
   </details>
 
@@ -331,6 +338,9 @@ footer {
 
 <script>
 // ---------- data model ----------
+
+// Event day. Before this date everything shows "upcoming"; after it, "done".
+const EVENT_DATE = "2026-07-14";
 
 const AGENDA = [
   { slot: "09:00–09:30", name: "Kickoff",              start: "09:00", end: "09:30" },
@@ -513,12 +523,39 @@ function save() {
   localStorage.setItem(STATE_KEY, JSON.stringify(state));
 }
 function taskState(id) {
-  return state.tasks[id] || { done: false, blocked: false, note: "" };
+  const manual = state.tasks[id] || { done: false, blocked: false, note: "" };
+  // Repo scan is the source of truth for auto-detectable tasks.
+  if (repoStatus && Object.prototype.hasOwnProperty.call(repoStatus.tasks || {}, id)) {
+    return { ...manual, done: !!repoStatus.tasks[id], auto: true };
+  }
+  return manual;
 }
 function setTask(id, patch) {
   state.tasks[id] = { ...taskState(id), ...patch };
   save();
   render();
+}
+
+// ---------- repo auto-sync ----------
+// docs/scan-progress.ps1 inspects the git branches and writes docs/tracker-status.js
+// (window.REPO_STATUS). The page reloads that file every 60s, so task state is
+// detected from the repository as the team pushes — no manual ticking needed
+// for auto-detectable tasks.
+
+let repoStatus = window.REPO_STATUS || null;
+
+function loadRepoStatus() {
+  const s = document.createElement("script");
+  s.src = "tracker-status.js?t=" + Date.now();
+  s.onload = () => {
+    if (window.REPO_STATUS) {
+      repoStatus = window.REPO_STATUS;
+      render();
+    }
+    s.remove();
+  };
+  s.onerror = () => s.remove(); // scanner not run yet — manual mode
+  document.body.appendChild(s);
 }
 
 // ---------- computed ----------
@@ -580,7 +617,11 @@ function renderKpis() {
   ].slice(0, 4).join("");
 }
 
-function nowMinutes() {
+// Returns minutes-of-day on the event day, or -1 before the event, or 24*60+1 after it.
+function eventClockMinutes() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (today < EVENT_DATE) return -1;
+  if (today > EVENT_DATE) return 24 * 60 + 1;
   const d = new Date();
   return d.getHours() * 60 + d.getMinutes();
 }
@@ -590,7 +631,7 @@ function toMinutes(hhmm) {
 }
 
 function renderTimeline() {
-  const now = nowMinutes();
+  const now = eventClockMinutes();
   const html = AGENDA.map(row => {
     const s = toMinutes(row.start), e = toMinutes(row.end);
     let cls = "", label = "upcoming";
@@ -625,9 +666,10 @@ function taskItem(task) {
     s.blocked ? "blocked" : "",
     s.note ? "notes-open" : "",
   ].join(" ").trim();
+  const autoChip = s.auto ? `<span class="auto-chip" title="Detected from the repository by scan-progress.ps1">auto</span>` : "";
   return `<div class="task ${cls}" data-id="${task.id}">
-    <input type="checkbox" ${s.done ? "checked" : ""} data-act="toggle-done" title="Mark done" />
-    <div class="title"><span class="id">${task.id}</span>${escapeHtml(task.title)}</div>
+    <input type="checkbox" ${s.done ? "checked" : ""} ${s.auto ? "disabled title='Detected from the repository — push code to change it'" : 'data-act="toggle-done" title="Mark done"'} />
+    <div class="title"><span class="id">${task.id}</span>${escapeHtml(task.title)}${autoChip}</div>
     <div class="state-btns">
       <button class="state-btn ${s.blocked ? "active-block" : ""}" data-act="toggle-blocked" title="Blocked?">🚫</button>
       <button class="state-btn notes-btn" data-act="toggle-notes" title="Notes">📝</button>
@@ -682,9 +724,14 @@ function render() {
   renderTimeline();
   renderTracks();
   renderCheckpoints();
-  const d = state.meta.updatedAt ? new Date(state.meta.updatedAt).toLocaleString() : "never";
+  const today = new Date().toISOString().slice(0, 10);
+  const dayNote = today < EVENT_DATE ? `event day: ${EVENT_DATE}` :
+                  today > EVENT_DATE ? "event finished" : "event day — live";
+  const scan = repoStatus
+    ? `repo scan: ${new Date(repoStatus.generatedAt).toLocaleTimeString()} (${repoStatus.refs?.team ?? "?"})`
+    : "repo scan: not run — see docs/scan-progress.ps1";
   document.getElementById("dateline").textContent =
-    `Full-day .NET modernization hackathon • last update: ${d}`;
+    `Full-day .NET modernization hackathon • ${dayNote} • ${scan}`;
 }
 
 // ---------- interactions ----------
@@ -785,9 +832,11 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove("show"), 2000);
 }
 
-// re-render the timeline every minute so NOW moves
+// re-render the timeline every minute so NOW moves; re-pull repo scan results
 setInterval(renderTimeline, 60_000);
+setInterval(loadRepoStatus, 60_000);
 
+loadRepoStatus();
 render();
 </script>
 
