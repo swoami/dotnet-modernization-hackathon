@@ -51,7 +51,7 @@ graph TD
 
 - `Common` is the only leaf; it references NuGet `log4net` and `Newtonsoft.Json` (both also referenced directly by `Web`).
 - `Data` depends only on `Common`. `Services`, `Web`, and `Worker` each depend on `Common` + `Data`.
-- **Gap:** `Web/ContosoInsurance.Web.csproj` has **no** `ProjectReference` to `ContosoInsurance.Services`, yet `Default.aspx.cs` uses `ContosoInsurance.Services.IClaimScoringService`. This is a compile-time dependency gap (likely relies on a copied/`svcutil` proxy that is not in the repo) — a probable build break. See [[arch-wcf-service]].
+- **Gap (confirmed build break):** `Web/ContosoInsurance.Web.csproj` has **no** `ProjectReference` (and no assembly reference) to `ContosoInsurance.Services`, yet `Default.aspx.cs` uses `ContosoInsurance.Services.IClaimScoringService`. The build baseline confirms this fails at compile: `Default.aspx.cs(7,24): error CS0234`. No out-of-repo proxy exists. See [[arch-wcf-service]] and [[build-and-test]].
 
 ## Main domain concepts
 
@@ -100,4 +100,3 @@ Web + WCF run under IIS; the Worker runs as a Windows Service (`ServiceBase.Run`
 ## Unknowns still open
 
 - No automated test project found — is any expected? `Pendiente/Unknown`.
-- Whether the missing `Web → Services` `ProjectReference` is a real build break or relies on an out-of-repo generated proxy. `Pendiente/Unknown`.
