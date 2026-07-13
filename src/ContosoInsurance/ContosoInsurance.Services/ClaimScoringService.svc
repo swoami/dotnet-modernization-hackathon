@@ -1,0 +1,1 @@
+<%@ ServiceHost Language="C#" Debug="true" Service="ContosoInsurance.Services.ClaimScoringService" CodeBehind="ClaimScoringService.svc.cs" %>

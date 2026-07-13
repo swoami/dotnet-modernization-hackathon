@@ -1,0 +1,27 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/*.log
+
+# Packages restored by legacy NuGet (packages.config)
+src/ContosoInsurance/packages/
+
+# azd / infra state
+.azure/
+azure.env
+
+# Node (in case anyone adds a Blazor/JS asset pipeline)
+node_modules/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Local secrets (guardrail — do NOT commit)
+appsettings.Development.json
+appsettings.Local.json
+*.pfx
+*.key
