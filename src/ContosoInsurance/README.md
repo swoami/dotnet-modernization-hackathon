@@ -11,7 +11,7 @@ ContosoInsurance.sln
 ├── ContosoInsurance.Services      WCF service host (SOAP claim scoring)
 ├── ContosoInsurance.Web           ASP.NET WebForms agent portal
 ├── ContosoInsurance.Worker        Windows Service (nightly claims export)
-└── db/                            SQL Server schema + seed
+└── ContosoInsurance.Data/Migrations   EF Core migrations (schema + applied at startup)
 ```
 
 Target framework: **.NET Framework 4.6.1** (all projects).
@@ -36,17 +36,40 @@ Building the legacy app is **not required** to modernize it. If you insist:
 
 - Visual Studio 2019 or 2022 with the *ASP.NET and web development* workload
 - .NET Framework 4.6.1 developer pack
-- SQL Server (LocalDB is fine); run `db/001-schema.sql` then `db/002-seed.sql`
+- SQL Server (LocalDB is fine); the Web app applies EF Core migrations and
+  seeds data automatically at startup (see *Database initialization* below)
 
 Update the `<connectionStrings>` in `Web/Web.config`, `Services/Web.config`, and
 `Worker/App.config`.
 
+## Database initialization
+
+`ContosoInsurance.Web` initializes the database at startup (`DbInitializer` in
+`ContosoInsurance.Data`):
+
+1. Applies pending EF Core migrations (creates the database if missing).
+   Databases created by the old `db/*.sql` scripts are detected and baselined
+   automatically.
+2. Seeds one demo login account per role (skipped if they already exist).
+3. Seeds sample policies/claims when the tables are empty.
+
+Configuration switches (`appsettings.json` or environment variables):
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `Database:AutoMigrate` | `true` | Apply migrations + seed at startup |
+| `Database:SeedSampleData` | `true` | Seed sample policies/claims |
+
+To add a new migration:
+
+```
+dotnet ef migrations add <Name> --project ContosoInsurance.Data --startup-project ContosoInsurance.Web
+```
+
 ## Local development login accounts
 
-After running `db/001-schema.sql` and `db/002-seed.sql`, use one of these
-development-only accounts to sign in locally. The seed script contains exactly
-one account for each currently seeded role; all use the documented demo
-password `Password1`.
+The startup seeder creates exactly one account per role; all use the
+documented demo password `Password1`.
 
 | Role | Username |
 | --- | --- |
@@ -54,8 +77,9 @@ password `Password1`.
 | Adjuster | `adjuster` |
 | Admin | `admin` |
 
-These accounts are only for local development. Do not run the seed script
-against production or reuse its demo password.
+These accounts are only for local development. Set `Database:AutoMigrate` to
+`false` (or rotate the accounts) in any environment that must not have the
+demo password.
 
 ## Do NOT
 
