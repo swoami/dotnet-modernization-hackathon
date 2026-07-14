@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
     <ProjectReference Include="..\ContosoInsurance.Common\ContosoInsurance.Common.csproj" />
     <ProjectReference Include="..\ContosoInsurance.Data\ContosoInsurance.Data.csproj" />
   </ItemGroup>

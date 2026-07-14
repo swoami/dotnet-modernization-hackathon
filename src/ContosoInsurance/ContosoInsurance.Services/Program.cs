@@ -1,5 +1,6 @@
 using System.Threading;
 using ContosoInsurance.Data;
+using ContosoInsurance.Common.Logging;
 using ContosoInsurance.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -9,6 +10,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddApplicationInsightsTelemetry();
+builder.Logging.AddContosoLogging(builder.Configuration);
 
 builder.Services.AddDbContext<ContosoDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ContosoDb")));
