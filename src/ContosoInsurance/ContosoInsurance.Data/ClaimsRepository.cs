@@ -24,9 +24,11 @@ namespace ContosoInsurance.Data
 
         private readonly string _connectionString;
 
-        public ClaimsRepository()
+        public ClaimsRepository() : this(ConfigHelper.GetConnectionString("ContosoDb")) { }
+
+        public ClaimsRepository(string connectionString)
         {
-            _connectionString = ConfigHelper.GetConnectionString("ContosoDb");
+            _connectionString = connectionString;
         }
 
         public List<Claim> GetRecent(int top = 50)

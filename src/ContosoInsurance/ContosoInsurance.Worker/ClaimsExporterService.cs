@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ContosoInsurance.Data;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -15,13 +16,17 @@ namespace ContosoInsurance.Worker
     {
         private readonly ILogger<ClaimsExporterService> _logger;
         private readonly ExportOptions _options;
+        private readonly string _connectionString;
 
         public ClaimsExporterService(
             ILogger<ClaimsExporterService> logger,
-            IOptions<ExportOptions> options)
+            IOptions<ExportOptions> options,
+            IConfiguration configuration)
         {
             _logger = logger;
             _options = options.Value;
+            _connectionString = configuration.GetConnectionString("ContosoDb")
+                ?? throw new InvalidOperationException("Connection string 'ContosoDb' is not configured.");
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -64,7 +69,7 @@ namespace ContosoInsurance.Worker
             Directory.CreateDirectory(root);
             var file = Path.Combine(root, "claims-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + ".csv");
 
-            var repo = new ClaimsRepository();
+            var repo = new ClaimsRepository(_connectionString);
             var claims = repo.GetRecent(1000);
 
             var sb = new StringBuilder();
