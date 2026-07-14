@@ -12,6 +12,7 @@ public class ContosoDbContext : DbContext
     public DbSet<Claim> Claims { get; set; }
     public DbSet<Policy> Policies { get; set; }
     public DbSet<User> Users { get; set; }
+    public DbSet<ExportLog> ExportLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -79,6 +80,18 @@ public class ContosoDbContext : DbContext
                 .HasMaxLength(32)
                 .HasDefaultValue("Agent")
                 .IsRequired();
+        });
+
+        modelBuilder.Entity<ExportLog>(entity =>
+        {
+            entity.ToTable("ExportLogs", "dbo");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.BlobName)
+                .HasMaxLength(512)
+                .IsRequired();
+            entity.Property(e => e.ExportedAtUtc)
+                .HasDefaultValueSql("SYSUTCDATETIME()");
         });
     }
 }
