@@ -1,0 +1,51 @@
+[
+  {
+    "file": "src/ContosoInsurance/ContosoInsurance.Worker/Program.cs",
+    "description": "Replaced the Windows-only ServiceBase.Run() entry point (tagged [SupportedOSPlatform(\"windows\")]) with Host.CreateApplicationBuilder(args). ExportOptions are bound from the 'ExportOptions' configuration section with ValidateDataAnnotations() and ValidateOnStart() for fail-fast startup validation. ClaimsExporterService is registered as a hosted BackgroundService. The host is started with await host.RunAsync(), enabling cooperative async cancellation and graceful shutdown.",
+    "issues": []
+  },
+  {
+    "file": "src/ContosoInsurance/ContosoInsurance.Worker/ClaimsExporterService.cs",
+    "description": "ServiceBase replaced with BackgroundService. System.Timers.Timer replaced with PeriodicTimer. Constructor DI injects ILogger<ClaimsExporterService> and IOptions<ExportOptions>. ExecuteAsync runs an initial export on startup, then creates a PeriodicTimer and loops via WaitForNextTickAsync(stoppingToken), catching OperationCanceledException for graceful shutdown. AppLogger replaced with structured ILogger calls. ConfigHelper replaced with IOptions<ExportOptions>. Export() changed from static to instance method to access injected options.",
+    "issues": [
+      {
+        "severity": "Minor",
+        "description": "Timer cadence differs subtly from the original implementation. In the original code, _timer.Start() is called before ExportSafely(), so the N-minute interval begins counting concurrently with the initial startup export. In the new code, the PeriodicTimer is created only after ExportSafelyAsync() completes on startup, so the first periodic tick is delayed by the duration of the initial export run. For a 60-minute interval this difference is negligible, but it is a behavioral change."
+      },
+      {
+        "severity": "Minor",
+        "description": "ExportSafelyAsync wraps the synchronous Export() in Task.Run(() => Export(), cancellationToken). The cancellationToken argument to Task.Run controls only whether the task is *scheduled* (it is a no-op if the token is not yet cancelled at the moment of the call); it does NOT propagate into Export() and cannot interrupt in-progress file I/O or database operations. A graceful shutdown signal may therefore be delayed until the current export completes, potentially exceeding the Generic Host's default 5-second shutdown timeout. This is not a regression from the original synchronous design but should be documented or addressed with truly async I/O APIs."
+      }
+    ]
+  },
+  {
+    "file": "src/ContosoInsurance/ContosoInsurance.Worker/ContosoInsurance.Worker.csproj",
+    "description": "SDK changed from Microsoft.NET.Sdk to Microsoft.NET.Sdk.Worker (the correct SDK for Generic Host Worker Services). System.ServiceProcess.ServiceController 9.0.0 removed. Microsoft.Extensions.Hosting 9.0.0 and Microsoft.Extensions.Options.DataAnnotations 9.0.0 added, fully supporting BackgroundService, IOptions<T>, and ValidateDataAnnotations().",
+    "issues": []
+  },
+  {
+    "file": "src/ContosoInsurance/ContosoInsurance.Worker/App.config",
+    "description": "The <appSettings> section (ExportRoot, ExportIntervalMinutes) and the legacy <startup> section targeting .NET Framework 4.6.1 were correctly removed. The <connectionStrings> section and <log4net> configuration remain — log4net is addressed in task 003. The connection string in App.config continues to be the live source because ClaimsRepository reads via ConfigurationManager.",
+    "issues": [
+      {
+        "severity": "Minor",
+        "description": "App.config retains the <connectionStrings> entry with a hardcoded plaintext password (Password=P@ssw0rd!) while appsettings.json now also declares a ConnectionStrings.ContosoDb key (with a placeholder value). Having the live credential in App.config while the Generic Host configuration file holds a placeholder creates an inconsistent dual-config situation. Future operators may assume appsettings.json is the authoritative source and update the wrong file with no observable effect. App.config should remain explicitly documented as the operative connection string source until the data layer is migrated to the Generic Host IConfiguration pipeline."
+      }
+    ]
+  },
+  {
+    "file": "src/ContosoInsurance/ContosoInsurance.Worker/appsettings.json",
+    "description": "New JSON configuration file for the Generic Host. Correctly defines the ExportOptions section (ExportRoot: C:\\Exports, ExportIntervalMinutes: 60) matching the original App.config appSettings values. Also includes a Logging section (Information level for Default and Microsoft.Hosting.Lifetime) and a ConnectionStrings section. The credential placeholder Password=YOUR_DB_PASSWORD_HERE is appropriate for source-control safety.",
+    "issues": [
+      {
+        "severity": "Major",
+        "description": "The ConnectionStrings.ContosoDb entry in appsettings.json (Password=YOUR_DB_PASSWORD_HERE) is dead configuration that is never consumed at runtime. ClaimsRepository reads its connection string exclusively via ConfigHelper.GetConnectionString('ContosoDb') -> ConfigurationManager.ConnectionStrings['ContosoDb'], which reads from App.config — not from the Generic Host IConfiguration pipeline. Any operator who supplies the real connection string in appsettings.json will experience silent misconfiguration: the application will continue using the stale App.config value unchanged. Either (a) the data layer must be refactored to accept the connection string through IConfiguration or constructor DI, or (b) the ConnectionStrings section should be removed from appsettings.json to avoid the false impression that it is operative."
+      }
+    ]
+  },
+  {
+    "file": "src/ContosoInsurance/ContosoInsurance.Worker/ExportOptions.cs",
+    "description": "New strongly-typed POCO bound from the 'ExportOptions' configuration section. ExportRoot is decorated with [Required] and has a cross-platform fallback default (Path.GetTempPath()/ContosoExports). ExportIntervalMinutes is decorated with [Range(1, int.MaxValue)] preventing a zero or negative interval. Both properties match the original App.config appSettings keys. Combined with ValidateDataAnnotations() and ValidateOnStart() in Program.cs, misconfigured options cause a startup failure rather than a silent runtime defect.",
+    "issues": []
+  }
+]

@@ -8,7 +8,7 @@ namespace ContosoInsurance.Common.Config
     /// </summary>
     public static class ConfigHelper
     {
-        public static string GetSetting(string key, string defaultValue = null)
+        public static string? GetSetting(string key, string? defaultValue = null)
         {
             var value = ConfigurationManager.AppSettings[key];
             return string.IsNullOrEmpty(value) ? defaultValue : value;

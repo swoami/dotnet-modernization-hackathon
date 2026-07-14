@@ -1,67 +1,75 @@
 using System;
 using System.Globalization;
 using System.IO;
-using System.ServiceProcess;
 using System.Text;
-using System.Timers;
-using ContosoInsurance.Common.Config;
-using ContosoInsurance.Common.Logging;
+using System.Threading;
+using System.Threading.Tasks;
 using ContosoInsurance.Data;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ContosoInsurance.Worker
 {
-    public class ClaimsExporterService : ServiceBase
+    public class ClaimsExporterService : BackgroundService
     {
-        private Timer _timer;
+        private readonly ILogger<ClaimsExporterService> _logger;
+        private readonly ExportOptions _options;
+        private readonly string _connectionString;
 
-        public ClaimsExporterService()
+        public ClaimsExporterService(
+            ILogger<ClaimsExporterService> logger,
+            IOptions<ExportOptions> options,
+            IConfiguration configuration)
         {
-            ServiceName = "ContosoClaimsExporter";
-            CanStop = true;
-            CanPauseAndContinue = false;
-            AutoLog = true;
+            _logger = logger;
+            _options = options.Value;
+            _connectionString = configuration.GetConnectionString("ContosoDb")
+                ?? throw new InvalidOperationException("Connection string 'ContosoDb' is not configured.");
         }
 
-        protected override void OnStart(string[] args)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            AppLogger.Configure();
-            AppLogger.Info("ClaimsExporterService starting");
-
-            var minutes = ConfigHelper.GetInt("ExportIntervalMinutes", 60);
-            _timer = new Timer(TimeSpan.FromMinutes(minutes).TotalMilliseconds) { AutoReset = true };
-            _timer.Elapsed += (s, e) => ExportSafely();
-            _timer.Start();
+            _logger.LogInformation("ClaimsExporterService starting");
 
             // Run once on startup
-            ExportSafely();
+            await ExportSafelyAsync(stoppingToken);
+
+            using var timer = new PeriodicTimer(TimeSpan.FromMinutes(_options.ExportIntervalMinutes));
+
+            try
+            {
+                while (await timer.WaitForNextTickAsync(stoppingToken))
+                {
+                    await ExportSafelyAsync(stoppingToken);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("ClaimsExporterService stopping");
+            }
         }
 
-        protected override void OnStop()
-        {
-            _timer?.Stop();
-            _timer?.Dispose();
-            AppLogger.Info("ClaimsExporterService stopped");
-        }
-
-        private void ExportSafely()
+        private async Task ExportSafelyAsync(CancellationToken cancellationToken)
         {
             try
             {
-                Export();
+                await Task.Run(() => Export(), cancellationToken);
             }
             catch (Exception ex)
             {
-                AppLogger.Error("Export failed", ex);
+                _logger.LogError(ex, "Export failed");
             }
         }
 
-        private static void Export()
+        private void Export()
         {
-            var root = ConfigHelper.GetSetting("ExportRoot", @"C:\Exports");
+            var root = _options.ExportRoot;
             Directory.CreateDirectory(root);
             var file = Path.Combine(root, "claims-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + ".csv");
 
-            var repo = new ClaimsRepository();
+            var repo = new ClaimsRepository(_connectionString);
             var claims = repo.GetRecent(1000);
 
             var sb = new StringBuilder();
@@ -79,10 +87,10 @@ namespace ContosoInsurance.Worker
             }
 
             File.WriteAllText(file, sb.ToString(), Encoding.UTF8);
-            AppLogger.Info("Wrote export " + file + " (" + claims.Count + " rows)");
+            _logger.LogInformation("Wrote export {File} ({Count} rows)", file, claims.Count);
         }
 
-        private static string Csv(string v)
+        private static string Csv(string? v)
         {
             if (string.IsNullOrEmpty(v)) return "";
             if (v.IndexOfAny(new[] { ',', '"', '\n' }) < 0) return v;

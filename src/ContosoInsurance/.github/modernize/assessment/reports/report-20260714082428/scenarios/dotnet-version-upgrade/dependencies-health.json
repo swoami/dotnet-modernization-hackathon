@@ -1,0 +1,606 @@
+{
+  "packageGovernance": {
+    "totalDistinctPackages": 2,
+    "totalVersionDriftInstances": 0,
+    "targetFramework": "net9.0",
+    "packages": [
+      {
+        "name": "log4net",
+        "totalProjectCount": 4,
+        "distinctVersionCount": 1,
+        "recommendedVersion": "",
+        "isCompatible": true,
+        "description": "",
+        "versions": [
+          {
+            "version": "2.0.8",
+            "projects": [
+              "ContosoInsurance.Common",
+              "ContosoInsurance.Services",
+              "ContosoInsurance.Web",
+              "ContosoInsurance.Worker"
+            ],
+            "isRecommended": false
+          }
+        ],
+        "upgrade": {
+          "newVersion": ""
+        }
+      },
+      {
+        "name": "Newtonsoft.Json",
+        "totalProjectCount": 2,
+        "distinctVersionCount": 1,
+        "recommendedVersion": "13.0.4",
+        "isCompatible": true,
+        "description": "NuGet package upgrade is recommended",
+        "versions": [
+          {
+            "version": "11.0.2",
+            "projects": [
+              "ContosoInsurance.Common",
+              "ContosoInsurance.Web"
+            ],
+            "isRecommended": false
+          }
+        ],
+        "upgrade": {
+          "newVersion": "13.0.4"
+        }
+      }
+    ]
+  },
+  "projects": [
+    {
+      "name": "ContosoInsurance.Common",
+      "path": "ContosoInsurance.Common\\ContosoInsurance.Common.csproj",
+      "isSdk": false,
+      "currentFrameworks": [
+        "net461"
+      ],
+      "targetFramework": "net9.0",
+      "dependencies": {
+        "packages": [
+          {
+            "name": "log4net",
+            "version": "2.0.8",
+            "isTransitive": false,
+            "isGlobal": false,
+            "isImplicit": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Common\\packages.config"
+              }
+            ],
+            "description": "",
+            "compatibility": "valid",
+            "recommendedVersion": ""
+          },
+          {
+            "name": "Newtonsoft.Json",
+            "version": "11.0.2",
+            "isTransitive": false,
+            "isGlobal": false,
+            "isImplicit": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Common\\packages.config"
+              }
+            ],
+            "description": "NuGet package upgrade is recommended",
+            "compatibility": "valid",
+            "recommendedVersion": "13.0.4",
+            "upgrade": {
+              "newVersion": "13.0.4"
+            }
+          }
+        ],
+        "assemblies": [
+          {
+            "name": "log4net",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Common\\ContosoInsurance.Common.csproj"
+              }
+            ],
+            "physicalPath": "packages\\log4net.2.0.8\\lib\\net45-full\\log4net.dll",
+            "compatibility": "valid"
+          },
+          {
+            "name": "Newtonsoft.Json",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Common\\ContosoInsurance.Common.csproj"
+              }
+            ],
+            "physicalPath": "packages\\Newtonsoft.Json.11.0.2\\lib\\net45\\Newtonsoft.Json.dll",
+            "compatibility": "valid"
+          },
+          {
+            "name": "System",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Common\\ContosoInsurance.Common.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          },
+          {
+            "name": "System.Configuration",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Common\\ContosoInsurance.Common.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          },
+          {
+            "name": "System.Core",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Common\\ContosoInsurance.Common.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          }
+        ],
+        "projectReferences": [],
+        "frameworkReferences": []
+      }
+    },
+    {
+      "name": "ContosoInsurance.Data",
+      "path": "ContosoInsurance.Data\\ContosoInsurance.Data.csproj",
+      "isSdk": false,
+      "currentFrameworks": [
+        "net461"
+      ],
+      "targetFramework": "net9.0",
+      "dependencies": {
+        "packages": [],
+        "assemblies": [
+          {
+            "name": "System",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Data\\ContosoInsurance.Data.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          },
+          {
+            "name": "System.Core",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Data\\ContosoInsurance.Data.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          },
+          {
+            "name": "System.Data",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Data\\ContosoInsurance.Data.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          }
+        ],
+        "projectReferences": [
+          {
+            "name": "ContosoInsurance.Common",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Data\\ContosoInsurance.Data.csproj"
+              }
+            ],
+            "referencedProjectPath": "ContosoInsurance.Common\\ContosoInsurance.Common.csproj",
+            "compatibility": "valid"
+          }
+        ],
+        "frameworkReferences": []
+      }
+    },
+    {
+      "name": "ContosoInsurance.Services",
+      "path": "ContosoInsurance.Services\\ContosoInsurance.Services.csproj",
+      "isSdk": false,
+      "currentFrameworks": [
+        "net461"
+      ],
+      "targetFramework": "net9.0",
+      "dependencies": {
+        "packages": [
+          {
+            "name": "log4net",
+            "version": "2.0.8",
+            "isTransitive": false,
+            "isGlobal": false,
+            "isImplicit": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Services\\packages.config"
+              }
+            ],
+            "description": "",
+            "compatibility": "valid",
+            "recommendedVersion": ""
+          }
+        ],
+        "assemblies": [
+          {
+            "name": "System",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Services\\ContosoInsurance.Services.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          },
+          {
+            "name": "System.Configuration",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Services\\ContosoInsurance.Services.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          },
+          {
+            "name": "System.Core",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Services\\ContosoInsurance.Services.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          },
+          {
+            "name": "System.ServiceModel",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Services\\ContosoInsurance.Services.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          },
+          {
+            "name": "System.Web",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Services\\ContosoInsurance.Services.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          }
+        ],
+        "projectReferences": [
+          {
+            "name": "ContosoInsurance.Common",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Services\\ContosoInsurance.Services.csproj"
+              }
+            ],
+            "referencedProjectPath": "ContosoInsurance.Common\\ContosoInsurance.Common.csproj",
+            "compatibility": "valid"
+          },
+          {
+            "name": "ContosoInsurance.Data",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Services\\ContosoInsurance.Services.csproj"
+              }
+            ],
+            "referencedProjectPath": "ContosoInsurance.Data\\ContosoInsurance.Data.csproj",
+            "compatibility": "valid"
+          }
+        ],
+        "frameworkReferences": []
+      }
+    },
+    {
+      "name": "ContosoInsurance.Web",
+      "path": "ContosoInsurance.Web\\ContosoInsurance.Web.csproj",
+      "isSdk": false,
+      "currentFrameworks": [
+        "net461"
+      ],
+      "targetFramework": "net9.0",
+      "dependencies": {
+        "packages": [
+          {
+            "name": "log4net",
+            "version": "2.0.8",
+            "isTransitive": false,
+            "isGlobal": false,
+            "isImplicit": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Web\\packages.config"
+              }
+            ],
+            "description": "",
+            "compatibility": "valid",
+            "recommendedVersion": ""
+          },
+          {
+            "name": "Newtonsoft.Json",
+            "version": "11.0.2",
+            "isTransitive": false,
+            "isGlobal": false,
+            "isImplicit": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Web\\packages.config"
+              }
+            ],
+            "description": "NuGet package upgrade is recommended",
+            "compatibility": "valid",
+            "recommendedVersion": "13.0.4",
+            "upgrade": {
+              "newVersion": "13.0.4"
+            }
+          }
+        ],
+        "assemblies": [
+          {
+            "name": "log4net",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Web\\ContosoInsurance.Web.csproj"
+              }
+            ],
+            "physicalPath": "packages\\log4net.2.0.8\\lib\\net45-full\\log4net.dll",
+            "compatibility": "valid"
+          },
+          {
+            "name": "Newtonsoft.Json",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Web\\ContosoInsurance.Web.csproj"
+              }
+            ],
+            "physicalPath": "packages\\Newtonsoft.Json.11.0.2\\lib\\net45\\Newtonsoft.Json.dll",
+            "compatibility": "valid"
+          },
+          {
+            "name": "System.Web",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Web\\ContosoInsurance.Web.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          },
+          {
+            "name": "System.ServiceModel",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Web\\ContosoInsurance.Web.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          },
+          {
+            "name": "System.Configuration",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Web\\ContosoInsurance.Web.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          },
+          {
+            "name": "System",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Web\\ContosoInsurance.Web.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          },
+          {
+            "name": "System.Core",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Web\\ContosoInsurance.Web.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          }
+        ],
+        "projectReferences": [
+          {
+            "name": "ContosoInsurance.Common",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Web\\ContosoInsurance.Web.csproj"
+              }
+            ],
+            "referencedProjectPath": "ContosoInsurance.Common\\ContosoInsurance.Common.csproj",
+            "compatibility": "valid"
+          },
+          {
+            "name": "ContosoInsurance.Data",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Web\\ContosoInsurance.Web.csproj"
+              }
+            ],
+            "referencedProjectPath": "ContosoInsurance.Data\\ContosoInsurance.Data.csproj",
+            "compatibility": "valid"
+          },
+          {
+            "name": "ContosoInsurance.Services",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Web\\ContosoInsurance.Web.csproj"
+              }
+            ],
+            "referencedProjectPath": "ContosoInsurance.Services\\ContosoInsurance.Services.csproj",
+            "compatibility": "valid"
+          }
+        ],
+        "frameworkReferences": []
+      }
+    },
+    {
+      "name": "ContosoInsurance.Worker",
+      "path": "ContosoInsurance.Worker\\ContosoInsurance.Worker.csproj",
+      "isSdk": false,
+      "currentFrameworks": [
+        "net461"
+      ],
+      "targetFramework": "net9.0",
+      "dependencies": {
+        "packages": [
+          {
+            "name": "log4net",
+            "version": "2.0.8",
+            "isTransitive": false,
+            "isGlobal": false,
+            "isImplicit": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Worker\\packages.config"
+              }
+            ],
+            "description": "",
+            "compatibility": "valid",
+            "recommendedVersion": ""
+          }
+        ],
+        "assemblies": [
+          {
+            "name": "System",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Worker\\ContosoInsurance.Worker.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          },
+          {
+            "name": "System.Configuration",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Worker\\ContosoInsurance.Worker.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          },
+          {
+            "name": "System.Configuration.Install",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Worker\\ContosoInsurance.Worker.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          },
+          {
+            "name": "System.Core",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Worker\\ContosoInsurance.Worker.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          },
+          {
+            "name": "System.ServiceProcess",
+            "version": "",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Worker\\ContosoInsurance.Worker.csproj"
+              }
+            ],
+            "compatibility": "valid"
+          }
+        ],
+        "projectReferences": [
+          {
+            "name": "ContosoInsurance.Common",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Worker\\ContosoInsurance.Worker.csproj"
+              }
+            ],
+            "referencedProjectPath": "ContosoInsurance.Common\\ContosoInsurance.Common.csproj",
+            "compatibility": "valid"
+          },
+          {
+            "name": "ContosoInsurance.Data",
+            "isTransitive": false,
+            "definedIn": [
+              {
+                "path": "ContosoInsurance.Worker\\ContosoInsurance.Worker.csproj"
+              }
+            ],
+            "referencedProjectPath": "ContosoInsurance.Data\\ContosoInsurance.Data.csproj",
+            "compatibility": "valid"
+          }
+        ],
+        "frameworkReferences": []
+      }
+    }
+  ]
+}
