@@ -1,5 +1,5 @@
 @page "/upload"
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @using System.Globalization
 @inject IConfiguration Configuration
 @inject ILogger<Upload> Logger
