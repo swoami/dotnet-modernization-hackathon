@@ -1,7 +1,10 @@
 // Azure SQL module for the hackathon platform track: AAD-only server + single database.
 
 param serverName string
-param databaseName string = 'ContosoInsuranceDb'
+// Matches the literal DB name in every track's legacy connection strings
+// (e.g. "Server=.;Database=ContosoInsurance;...") so the migration doesn't
+// require a database rename alongside the connection-string/auth changes.
+param databaseName string = 'ContosoInsurance'
 param location string
 param tags object = {}
 param tenantId string

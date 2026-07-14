@@ -28,7 +28,10 @@ var commonEnv = [
     value: appInsightsConnectionString
   }
   {
-    name: 'ConnectionStrings__ContosoInsurance'
+    // Matches ConfigHelper.GetConnectionString("ContosoDb") used by
+    // ContosoInsurance.Data (ClaimsRepository/PolicyRepository/UserRepository),
+    // consumed by Web, Services, and (once DB-enabled) Worker on track a/b.
+    name: 'ConnectionStrings__ContosoDb'
     value: sqlConnectionString
   }
   {
