@@ -65,14 +65,14 @@ iterate.
 
 ### Track A "done" checklist
 
-- [ ] `Web`, `Services`, `Data`, `Common` target `net9.0`
-- [ ] No `packages.config`, no `Web.config`
-- [ ] `Program.cs` composes the app with DI, config, logging, cookie auth
+- [x] `Web`, `Services`, `Data`, `Common` target `net9.0`
+- [x] No `packages.config`, no `Web.config`
+- [x] `Program.cs` composes the app with DI, config, logging, cookie auth
 - [ ] `ContosoDbContext` in use; ADO.NET removed from `Data/`
 - [ ] Concat-SQL search converted to safe query
 - [ ] SHA1 password hashing replaced with a modern KDF (or Entra ID stretch)
 - [ ] `ILogger` everywhere; log4net removed
-- [ ] Scoring endpoint answers over HTTP JSON, no more WCF client
+- [x] Scoring endpoint answers over HTTP JSON, no more WCF client
 
 ---
 
