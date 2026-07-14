@@ -1,0 +1,52 @@
+name: CodeQL Security Analysis
+
+on:
+  push:
+    branches: [main, "track/**", integration]
+  pull_request:
+    branches: [main, integration]
+  schedule:
+    # Weekly scan every Monday at 07:00 UTC
+    - cron: '0 7 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: csharp
+            build-mode: manual
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # Use the default query suite + security-extended for broader coverage
+          queries: security-extended,security-and-quality
+
+      - name: Build solution
+        working-directory: src/ContosoInsurance
+        run: dotnet build ContosoInsurance.sln --configuration Release
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
