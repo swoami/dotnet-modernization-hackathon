@@ -171,5 +171,5 @@ resource worker 'Microsoft.App/containerApps@2024-03-01' = {
 }
 
 output webFqdn string = web.properties.configuration.ingress.fqdn
-output servicesFqdn string = deployServicesApp ? services.properties.configuration.ingress.fqdn : ''
+output servicesFqdn string = deployServicesApp ? (services.?properties.?configuration.?ingress.?fqdn ?? '') : ''
 output workerAppName string = worker.name
