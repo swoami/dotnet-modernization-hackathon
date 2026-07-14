@@ -10,10 +10,8 @@ namespace ContosoInsurance.Worker
     {
         public const string SectionName = "ExportOptions";
 
-        /// <summary>Root directory where CSV export files are written.</summary>
-        [Required]
-        public string ExportRoot { get; set; } = System.IO.Path.Combine(
-            System.IO.Path.GetTempPath(), "ContosoExports");
+        /// <summary>Azure Blob Storage container name for CSV exports.</summary>
+        public string ContainerName { get; set; } = "claim-exports";
 
         /// <summary>How often (in minutes) the export runs after the initial startup run.</summary>
         [Range(1, int.MaxValue, ErrorMessage = "ExportIntervalMinutes must be at least 1.")]
