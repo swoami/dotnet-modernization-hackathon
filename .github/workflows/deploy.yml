@@ -49,6 +49,17 @@ jobs:
         working-directory: src/ContosoInsurance
         run: dotnet test ContosoInsurance.sln --configuration Release --no-build
 
+      # R1.3 — surface vulnerable packages in the job log and the Summary tab.
+      # Non-gating (continue-on-error: true): a vulnerable dep is a warning to fix, not a deploy blocker.
+      - name: Check for vulnerable packages
+        working-directory: src/ContosoInsurance
+        continue-on-error: true
+        run: |
+          echo "## Vulnerable packages scan" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          dotnet list package --vulnerable --include-transitive | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
       # Deploy secrets/vars (AZURE_CLIENT_ID etc.) aren't configured yet in this repo — skip the
       # Azure steps instead of failing the whole run until OIDC federation is set up. Once the
       # secrets/vars below are added, these steps activate automatically on the next push.
