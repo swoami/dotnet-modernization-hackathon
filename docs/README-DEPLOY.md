@@ -58,22 +58,13 @@ azd deploy
 
 ## azure.yaml service coverage
 
-Today `src/ContosoInsurance/azure.yaml` defines only one service:
+`src/ContosoInsurance/azure.yaml` defines all three services:
 
-- `contosoinsurance-worker`
-  - `project: ContosoInsurance.Worker`
-  - `host: containerapp`
-  - `language: dotnet`
-  - resource port `8080`
+- `contosoinsurance-web` — `project: ContosoInsurance.Web`, `host: containerapp`, `docker.path: ./Dockerfile`, `docker.context: ../../..` (repo root)
+- `contosoinsurance-services` — `project: ContosoInsurance.Services`, `host: containerapp`, `docker.path: ./Dockerfile`, `docker.context: ../../..` (repo root)
+- `contosoinsurance-worker` — `project: ContosoInsurance.Worker`, `host: containerapp`, `docker.path: ./Dockerfile`, `docker.context: ../../..` (repo root)
 
-**Known gap:** `contosoinsurance-web` and `contosoinsurance-services` are not defined in `azure.yaml` right now. Until those entries are added, a full `azd deploy` cannot build/push/deploy all three apps from azd.
-
-What still needs to be added:
-
-- `contosoinsurance-web` with `project: ContosoInsurance.Web`, `host: containerapp`, and Docker settings that use the repo root as build context (`../..` from `src/ContosoInsurance/`) with `ContosoInsurance.Web/Dockerfile`.
-- `contosoinsurance-services` with `project: ContosoInsurance.Services`, `host: containerapp`, and Docker settings that use the repo root as build context (`../..` from `src/ContosoInsurance/`) with `ContosoInsurance.Services/Dockerfile`.
-
-The checked-in Dockerfiles explicitly require repo-root build context because they copy sibling projects during `dotnet restore` / `dotnet publish`.
+All three use `docker.context: ../../..` (relative to each service's `project` folder) so the Docker build context is the repo root, not the project directory — required because each Dockerfile `COPY`s sibling `Common`/`Data`/`Services` projects (`ProjectReference`s across folders) during `dotnet restore`/`dotnet publish`. `docker.path` stays `./Dockerfile` since each Dockerfile already lives inside its own project folder; only the build context needs to reach further up.
 
 ## CI/CD (GitHub Actions)
 
@@ -225,6 +216,5 @@ This confirms that the secret exists and that your identity can resolve it witho
 
 ## Known gaps / follow-ups
 
-- `azure.yaml` still only defines `contosoinsurance-worker`; `contosoinsurance-web` and `contosoinsurance-services` still need to be added before a full azd-driven deploy can build/push all three images.
 - No live deployment has been run yet in this environment; this guide is based on the checked-in Bicep, azd, and workflow files and should be re-checked after the first real deploy.
 - The GitHub Actions OIDC path assumes the Azure side federated credential is already configured for this GitHub repo/environment; without that precondition, `azure/login@v2` cannot authenticate even if the repo secrets/variables are present.

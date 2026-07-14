@@ -4,11 +4,38 @@ name: contoso-insurance
 metadata:
     template: azd-init@1.25.2
 services:
+    contosoinsurance-web:
+        project: ContosoInsurance.Web
+        host: containerapp
+        language: dotnet
+        docker:
+            # docker.path is relative to `project` (the Dockerfile already lives
+            # there); docker.context is also relative to `project`, and must
+            # reach the repo root because this Dockerfile COPYs sibling
+            # Common/Data/Services projects (ProjectReference across folders).
+            path: ./Dockerfile
+            context: ../../..
+    contosoinsurance-services:
+        project: ContosoInsurance.Services
+        host: containerapp
+        language: dotnet
+        docker:
+            path: ./Dockerfile
+            context: ../../..
     contosoinsurance-worker:
         project: ContosoInsurance.Worker
         host: containerapp
         language: dotnet
+        docker:
+            path: ./Dockerfile
+            context: ../../..
 resources:
+    contosoinsurance-web:
+        type: host.containerapp
+        port: 8080
+    contosoinsurance-services:
+        type: host.containerapp
+        port: 8080
     contosoinsurance-worker:
         type: host.containerapp
         port: 8080
