@@ -22,6 +22,8 @@ builder.Services.AddAntiforgery();
 
 builder.Services.AddDbContextFactory<ContosoDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ContosoDb")));
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ContosoDbContext>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 var scoringEndpoint = builder.Configuration["AppSettings:ClaimScoringEndpoint"] ?? "http://localhost:8080";
@@ -120,30 +122,7 @@ app.MapPost("/auth/login", async Task<IResult> (
     })
     .AllowAnonymous();
 
-app.MapGet("/health", async Task<IResult> (
-        IDbContextFactory<ContosoDbContext> dbFactory,
-        ILogger<Program> logger,
-        CancellationToken cancellationToken) =>
-    {
-        try
-        {
-            await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
-            if (await db.Database.CanConnectAsync(cancellationToken))
-            {
-                return Results.Ok(new { status = "Healthy" });
-            }
-
-            logger.LogWarning("Database connectivity health check failed.");
-        }
-        catch (Exception exception)
-        {
-            logger.LogWarning(exception, "Database connectivity health check failed.");
-        }
-
-        return Results.Json(
-            new { status = "Unhealthy" },
-            statusCode: StatusCodes.Status503ServiceUnavailable);
-    })
+app.MapHealthChecks("/health")
     .AllowAnonymous();
 
 app.MapGet("/auth/logout", async Task<IResult> (HttpContext httpContext) =>
