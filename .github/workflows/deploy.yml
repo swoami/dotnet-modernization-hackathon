@@ -126,16 +126,61 @@ jobs:
             --resource-group "$AZURE_RESOURCE_GROUP" \
             --name "$DEPLOYMENT_NAME" \
             --template-file ../../infra/main.bicep \
-            --parameters ../../infra/main.bicepparam
+            --parameters ../../infra/main.bicepparam \
+            --output none
 
-          az deployment group show \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --name "$DEPLOYMENT_NAME" \
-            --query properties.outputs -o json \
-          | jq -r 'to_entries[] | "\(.key)=\(.value.value)"' \
-          | while IFS='=' read -r key value; do
-              azd env set "$key" "$value"
-            done
+          # `az deployment group show`'s outputs come back with mangled key casing for
+          # SCREAMING_SNAKE_CASE names (confirmed: the compiled ARM template has the correct
+          # AZURE_CONTAINER_REGISTRY_ENDPOINT-style keys, but the deployment-show API response
+          # does not) -- match case-insensitively against the known output names from
+          # infra/main.bicep rather than trusting the returned casing verbatim.
+          python3 - "$AZURE_RESOURCE_GROUP" "$DEPLOYMENT_NAME" <<'PYEOF' > azd-outputs.env
+          import json
+          import subprocess
+          import sys
+
+          rg, deployment_name = sys.argv[1], sys.argv[2]
+          result = subprocess.run(
+              [
+                  "az", "deployment", "group", "show",
+                  "--resource-group", rg,
+                  "--name", deployment_name,
+                  "--query", "properties.outputs",
+                  "-o", "json",
+              ],
+              check=True,
+              capture_output=True,
+              text=True,
+          )
+          outputs = {k.upper(): v["value"] for k, v in json.loads(result.stdout).items()}
+
+          expected_names = [
+              "AZURE_CONTAINER_REGISTRY_ENDPOINT",
+              "AZURE_CONTAINER_REGISTRY_NAME",
+              "AZURE_RESOURCE_GROUP",
+              "APPLICATIONINSIGHTS_CONNECTION_STRING",
+              "AZURE_SQL_SERVER_FQDN",
+              "AZURE_SQL_DATABASE_NAME",
+              "AZURE_STORAGE_ACCOUNT_NAME",
+              "AZURE_KEY_VAULT_URI",
+              "AZURE_KEY_VAULT_NAME",
+              "AZURE_MANAGED_IDENTITY_CLIENT_ID",
+              "WEB_URI",
+              "SERVICES_URI",
+              "WORKER_APP_NAME",
+          ]
+          for name in expected_names:
+              if name in outputs:
+                  print(f"{name}={outputs[name]}")
+              else:
+                  print(f"::warning::Deployment output {name} was not found", file=sys.stderr)
+          PYEOF
+
+          while IFS='=' read -r key value; do
+            [ -n "$key" ] || continue
+            azd env set "$key" "$value"
+          done < azd-outputs.env
+          rm -f azd-outputs.env
 
       - name: Deploy application
         if: steps.azure-config.outputs.configured == 'true'
