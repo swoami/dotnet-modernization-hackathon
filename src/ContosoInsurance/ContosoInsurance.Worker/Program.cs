@@ -1,14 +1,16 @@
-using System.Runtime.Versioning;
-using System.ServiceProcess;
+using ContosoInsurance.Worker;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-namespace ContosoInsurance.Worker
-{
-    [SupportedOSPlatform("windows")]
-    internal static class Program
-    {
-        private static void Main()
-        {
-            ServiceBase.Run(new ServiceBase[] { new ClaimsExporterService() });
-        }
-    }
-}
+var builder = Host.CreateApplicationBuilder(args);
+
+builder.Services
+    .AddOptions<ExportOptions>()
+    .BindConfiguration(ExportOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services.AddHostedService<ClaimsExporterService>();
+
+var host = builder.Build();
+await host.RunAsync();
