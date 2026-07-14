@@ -196,4 +196,14 @@ jobs:
           AZURE_LOCATION: ${{ env.AZURE_LOCATION }}
           AZURE_RESOURCE_GROUP: ${{ env.AZURE_RESOURCE_GROUP }}
           AZD_AUTH_TYPE: ${{ env.AZD_AUTH_TYPE }}
-        run: azd deploy --no-prompt
+        run: |
+          set -euo pipefail
+          # `azd deploy` (no args) packages/builds all three services' Docker images
+          # concurrently. Each build stage pulls in the full dotnet/sdk:9.0 image and
+          # runs its own dotnet restore/publish; three of these in parallel exceed the
+          # GitHub-hosted runner's ~7GB RAM and the OOM killer kills a build process
+          # (surfaces as "building image: signal: killed" with no compiler error).
+          # Deploy one service at a time instead so only one Docker build runs at once.
+          for service in contosoinsurance-services contosoinsurance-worker contosoinsurance-web; do
+            azd deploy "$service" --no-prompt
+          done
