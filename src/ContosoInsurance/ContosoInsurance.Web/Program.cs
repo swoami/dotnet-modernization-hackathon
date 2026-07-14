@@ -1,11 +1,13 @@
 using System.Security.Claims;
 using ContosoInsurance.Data;
 using ContosoInsurance.Common.Logging;
+using ContosoInsurance.Common.Storage;
 using ContosoInsurance.Web.Components;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using User = ContosoInsurance.Data.Models.User;
@@ -25,6 +27,17 @@ builder.Services.AddDbContextFactory<ContosoDbContext>(options =>
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ContosoDbContext>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddClaimDocumentStore(builder.Configuration);
+
+// Azure Container Apps terminates TLS at its ingress proxy and forwards requests to the
+// app over plain HTTP; without this, the app thinks every request is HTTP and generates
+// absolute http:// URLs (Blazor script/WebSocket, favicon), which browsers block as mixed content.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 var scoringEndpoint = builder.Configuration["AppSettings:ClaimScoringEndpoint"] ?? "http://localhost:8080";
 builder.Services.AddHttpClient("scoring", client =>
@@ -48,6 +61,8 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 app.Logger.LogInformation("ContosoInsurance.Web starting");
 app.Lifetime.ApplicationStopping.Register(() => app.Logger.LogInformation("ContosoInsurance.Web stopping"));

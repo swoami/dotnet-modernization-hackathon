@@ -1,4 +1,5 @@
 @page "/"
+@using System.Globalization
 @using System.Net
 @using ContosoInsurance.Data
 @using ContosoInsurance.Data.Models
@@ -36,7 +37,7 @@ else
                     <td>@claim.ClaimId</td>
                     <td>@claim.Policy?.PolicyNumber</td>
                     <td>@claim.ClaimantName</td>
-                    <td>@claim.Amount.ToString("C")</td>
+                    <td>@claim.Amount.ToString("$#,##0.00", CultureInfo.InvariantCulture)</td>
                     <td>@claim.Status</td>
                     <td>@claim.FiledOn.ToString("yyyy-MM-dd")</td>
                     <td>@claim.Score</td>
