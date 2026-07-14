@@ -72,6 +72,12 @@ jobs:
         if: steps.azure-config.outputs.configured == 'true'
         uses: Azure/setup-azd@v2
 
+      # azd has its own auth session, separate from azure/login's az CLI session, and also needs
+      # to be told which app registration/tenant to federate as.
+      - name: Login azd with OIDC
+        if: steps.azure-config.outputs.configured == 'true'
+        run: azd auth login --client-id "$AZURE_CLIENT_ID" --tenant-id "$AZURE_TENANT_ID" --federated-credential-provider github
+
       # azd needs an active environment in CI, so re-select it when it exists or create it once from repo variables.
       - name: Select or create azd environment
         if: steps.azure-config.outputs.configured == 'true'
