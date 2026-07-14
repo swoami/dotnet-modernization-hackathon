@@ -136,6 +136,13 @@ module containerAppsEnvironment 'modules/container-apps-environment.bicep' = {
       '2022-10-01'
     ).primarySharedKey
   }
+  // The bicep linter flags this as "unnecessary" (it sees logAnalyticsCustomerId referencing the
+  // module output), but empirically the listKeys() call on the raw resourceId() ran in the same
+  // deployment batch as the workspace itself and failed with ResourceNotFound before it existed.
+  // Force explicit ordering to make this reliable.
+  dependsOn: [
+    logAnalytics
+  ]
 }
 
 // ---------- RBAC ----------
