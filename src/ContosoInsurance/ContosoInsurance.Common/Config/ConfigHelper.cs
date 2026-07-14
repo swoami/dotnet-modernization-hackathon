@@ -10,7 +10,7 @@ namespace ContosoInsurance.Common.Config
     {
         private static readonly Lazy<IConfiguration> _configuration = new Lazy<IConfiguration>(CreateConfiguration);
 
-        public static string GetSetting(string key, string defaultValue = null)
+        public static string? GetSetting(string key, string? defaultValue = null)
         {
             var value = Configuration["AppSettings:" + key];
             return string.IsNullOrEmpty(value) ? defaultValue : value;

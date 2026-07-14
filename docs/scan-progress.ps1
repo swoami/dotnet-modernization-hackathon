@@ -215,3 +215,13 @@ do {
 } finally {
     Pop-Location
 }
+
+# Explicitly force a clean exit code. Several helper functions above (Test-GitRef,
+# Test-GrepAt, Test-AnyAt, etc.) intentionally call git in ways that can leave
+# $LASTEXITCODE non-zero even on a fully successful scan (e.g. "ref not found" or
+# "no grep match" are valid negative results, not errors). When GitHub Actions runs
+# this script via `shell: pwsh` it invokes `pwsh -Command ". 'script.ps1'"`, and pwsh
+# can surface that stale $LASTEXITCODE as the process exit code, intermittently
+# failing the job even though the scan completed correctly. Real failures still throw
+# (ErrorActionPreference = Stop) and never reach this line.
+exit 0

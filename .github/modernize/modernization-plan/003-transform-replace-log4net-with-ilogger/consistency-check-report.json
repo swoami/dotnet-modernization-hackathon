@@ -1,0 +1,36 @@
+[
+  {
+    "file": ".github/modernize/modernization-plan/.metadata/tasks.json",
+    "description": "Added 'status: started' field to task 003. This is purely a metadata bookkeeping change with no impact on runtime behaviour.",
+    "issues": []
+  },
+  {
+    "file": "src/ContosoInsurance/ContosoInsurance.Common/ContosoInsurance.Common.csproj",
+    "description": "Replaced <PackageReference Include=\"log4net\" Version=\"3.3.2\" /> with <PackageReference Include=\"Microsoft.Extensions.Logging.Abstractions\" Version=\"9.0.0\" />. Using only the Abstractions package in a shared class library is the correct .NET pattern — it provides ILoggerFactory, ILogger, and all LogXxx() extension methods without pulling concrete logging implementations as transitive dependencies into consumers.",
+    "issues": []
+  },
+  {
+    "file": "src/ContosoInsurance/ContosoInsurance.Common/Logging/AppLogger.cs",
+    "description": "Refactored AppLogger from wrapping log4net (ILog + System.Diagnostics.Trace) to wrapping an ILogger? obtained from ILoggerFactory injected via the new Configure(ILoggerFactory) overload. Info/Warn/Error now delegate to _logger?.LogInformation/LogWarning/LogError with structured-logging placeholders ({Message}). LogError correctly positions the exception as the first argument per MEL conventions. An [Obsolete] attribute is added to guide callers toward constructor-injected ILogger<T>. The null-conditional ?. operator ensures calls before Configure() is invoked are silently suppressed. This correctly implements the task requirement to 'wrap an injected ILogger so existing callers can transition incrementally' and routes all log output through the Generic Host console pipeline (stdout/stderr), meeting the migration-console-logging knowledge base requirement for cloud log aggregation.",
+    "issues": [
+      {
+        "severity": "Minor",
+        "description": "The static field '_logger' is declared as 'private static ILogger? _logger' without the 'volatile' modifier. The .NET memory model does not formally guarantee cross-thread visibility of a plain reference-type field write without a memory barrier or volatile. In practice this is safe here because Configure() is called synchronously on the main thread before host.RunAsync() starts any BackgroundService threads, but the field should be declared 'private static volatile ILogger? _logger' to be formally correct and future-proof against refactoring that changes the initialization order."
+      },
+      {
+        "severity": "Minor",
+        "description": "The original Configure() contained an idempotency guard ('if (_configured) return;') that prevented double-initialization. The new implementation lacks this guard: calling Configure() a second time silently replaces _logger with a new ILogger instance. Given the class is [Obsolete] and Configure() is called exactly once from Program.cs, this poses no practical risk, but the removal is a subtle behavioural change from the original contract."
+      }
+    ]
+  },
+  {
+    "file": "src/ContosoInsurance/ContosoInsurance.Worker/App.config",
+    "description": "Removed the <configSections> log4net section handler and the entire <log4net> XML block, including the RollingFileAppender that wrote to C:\\Logs\\ContosoInsurance.Worker.log. Console logging is now handled entirely by the Generic Host built-in logging pipeline configured via Host.CreateApplicationBuilder and the Logging.LogLevel section in appsettings.json (already present from task 002). This correctly replaces file-based logging with stdout/stderr output as required by the migration-console-logging knowledge base for cloud log aggregation.",
+    "issues": []
+  },
+  {
+    "file": "src/ContosoInsurance/ContosoInsurance.Worker/Program.cs",
+    "description": "Added AppLogger.Configure(host.Services.GetRequiredService<ILoggerFactory>()) between host.Build() and host.RunAsync(). This wires the legacy AppLogger facade to the Generic Host logging pipeline so that code in ContosoInsurance.Data (e.g., ClaimsRepository) that still calls AppLogger static methods routes through ILogger and appears in console output. ILoggerFactory is always registered by Host.CreateApplicationBuilder, so GetRequiredService will never throw. The call is made synchronously on the main thread before any hosted-service threads start, ensuring _logger is initialized before any concurrent callers can invoke AppLogger.Info/Warn/Error. #pragma warning disable/restore CS0618 correctly and explicitly suppresses the [Obsolete] warning for this intentional transitional call site.",
+    "issues": []
+  }
+]

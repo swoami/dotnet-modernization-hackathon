@@ -1,5 +1,5 @@
 using System;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.Security.Cryptography;
 using System.Text;
 using ContosoInsurance.Common.Config;
@@ -16,7 +16,7 @@ namespace ContosoInsurance.Data
     {
         private readonly string _connectionString = ConfigHelper.GetConnectionString("ContosoDb");
 
-        public User FindByUsername(string username)
+        public User? FindByUsername(string username)
         {
             const string sql = @"SELECT UserId, Username, PasswordHash, Salt, Role
                                  FROM   dbo.Users

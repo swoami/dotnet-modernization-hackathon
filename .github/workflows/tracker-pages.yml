@@ -1,6 +1,10 @@
 name: Progress Tracker (GitHub Pages)
 
 on:
+  # Only main pushes trigger the tracker rebuild+deploy: the scan step itself
+  # reads every track/* branch fresh via `git fetch` below, and the `deploy`
+  # job's `github-pages` environment only allows deploys from `main` anyway,
+  # so triggering on track/* pushes just produced noisy failed runs there.
   push:
     branches: [main]
   workflow_dispatch:
