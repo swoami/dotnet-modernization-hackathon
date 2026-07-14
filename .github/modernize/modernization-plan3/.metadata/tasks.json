@@ -9,7 +9,7 @@
       "summary": "",
       "description": "Add Azure.Storage.Blobs and Azure.Identity NuGet packages to ContosoInsurance.Worker.csproj and ContosoInsurance.Common.csproj. These packages provide BlobServiceClient, BlobContainerClient, and DefaultAzureCredential required for Managed Identity-based blob access.",
       "reason": "The worker currently writes CSV exports to local disk via File.WriteAllText. Azure Blob Storage with DefaultAzureCredential replaces the file-system dependency, enabling cloud-native, credential-free storage. Both the Worker (Track B) and Web (Track A) share the same Blob SDK via Common.",
-      "requirements": "1. Add Azure.Storage.Blobs (latest stable, no known CVEs) to ContosoInsurance.Worker.csproj. 2. Add Azure.Identity (latest stable, no known CVEs) to ContosoInsurance.Common.csproj and ContosoInsurance.Worker.csproj. 3. Do NOT add any storage account connection strings or keys — Managed Identity (DefaultAzureCredential) is the only accepted authentication path. 4. Verify dotnet build passes after adding packages.",
+      "requirements": "1. Add Azure.Storage.Blobs (latest stable, no known CVEs) to ContosoInsurance.Worker.csproj and ContosoInsurance.Common.csproj. 2. Add Azure.Identity (latest stable, no known CVEs) to ContosoInsurance.Worker.csproj and ContosoInsurance.Common.csproj. 3. Do NOT add any storage account connection strings or keys — Managed Identity (DefaultAzureCredential) is the only accepted authentication path. 4. Verify dotnet build passes after adding packages.",
       "successCriteria": {
         "passBuild": "true",
         "generateNewUnitTests": "false",
