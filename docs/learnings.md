@@ -12,6 +12,11 @@ Keep entries short. Bullets are fine. One-liners are fine.
 
 ### Manual follow-up
 
+- **Removing the static `AppLogger` facade** — after the Data repositories and
+  Worker had constructor-injected `ILogger<T>`, `AppLogger` and the legacy
+  `ConfigHelper` had no consumers. Delete those facades and their direct-only
+  packages rather than retaining compatibility layers; keep
+  `AddContosoLogging()` as the shared host logging setup.
 - **Repository DI needs a scope in hosted services** — EF Core repositories take a scoped
   `ContosoDbContext`; resolve them within an `IServiceScopeFactory` scope in a
   `BackgroundService` rather than retaining a context or connection string for its lifetime.

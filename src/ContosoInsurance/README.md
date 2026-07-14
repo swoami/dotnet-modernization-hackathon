@@ -21,9 +21,9 @@ Target framework: **.NET Framework 4.6.1** (all projects).
 | Concern | Legacy pattern | Where to look |
 | --- | --- | --- |
 | Framework | .NET Fx 4.6.1, `packages.config` | every `*.csproj` |
-| Config | `appsettings.json` + `IConfiguration` (`AppSettings` / `ConnectionStrings`) | `Common/Config/ConfigHelper.cs` |
+| Config | `appsettings.json` + host-provided `IConfiguration` (`AppSettings` / `ConnectionStrings`) | each application's `Program.cs` |
 | Data access | Raw ADO.NET, inline SQL, string-concat parameters in one place | `Data/ClaimsRepository.cs` |
-| Logging | `Microsoft.Extensions.Logging` console provider + `Trace.WriteLine` | `Common/Logging/AppLogger.cs` |
+| Logging | `ILogger` through the shared host logging pipeline | `Common/Logging/ContosoLoggingExtensions.cs` |
 | Local file I/O | Writes to `C:\ClaimsFiles\` and `C:\Exports\` | `Web/Upload.aspx.cs`, `Worker/ClaimsExporterService.cs` |
 | Secrets | Plain-text SQL user/password in config | `Web/Web.config`, `Worker/App.config` |
 | Hosting | IIS (Web + WCF) + Windows Service (Worker) | `*.csproj`, `Worker/ProjectInstaller.cs` |
