@@ -78,7 +78,7 @@ jobs:
           fi
           azd env set AZURE_LOCATION "$AZURE_LOCATION"
           azd env set AZURE_RESOURCE_GROUP "$AZURE_RESOURCE_GROUP"
-          azd env set AZURE_SUBSCRIPTION_ID "3b77307b-4382-43d7-8075-7704bf73196f"
+          azd env set AZURE_SUBSCRIPTION_ID "$AZURE_SUBSCRIPTION_ID"
 
       # Keep first-time infrastructure creation manual so regular main pushes only redeploy the app.
       - name: Provision Azure infrastructure
