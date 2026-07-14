@@ -23,10 +23,7 @@ builder.Services
 builder.Logging.AddContosoLogging(builder.Configuration);
 builder.Services.AddClaimDocumentStore(builder.Configuration);
 
-builder.Services.AddApplicationInsightsTelemetryWorkerService(options =>
-{
-    options.ConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
-});
+builder.Services.AddApplicationInsightsTelemetryWorkerService();
 
 builder.Services.AddDbContext<ContosoDbContext>(options =>
     options.UseSqlServer(connectionString));
