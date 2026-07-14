@@ -8,6 +8,19 @@ Keep entries short. Bullets are fine. One-liners are fine.
 
 ---
 
+## Track A — Data EF Core modernization (`track/a-web-api`)
+
+### Manual follow-up
+
+- **Repository DI needs a scope in hosted services** — EF Core repositories take a scoped
+  `ContosoDbContext`; resolve them within an `IServiceScopeFactory` scope in a
+  `BackgroundService` rather than retaining a context or connection string for its lifetime.
+- **Read-only repository results need `AsNoTracking()`** — projecting claim/policy joins into
+  detached `Claim` results preserves the old repository behavior while allowing async EF Core
+  queries and a parameterized LINQ substring search.
+
+---
+
 ## Track B — Worker & Storage modernization (`track/b-worker-storage`)
 
 ### Tooling used
