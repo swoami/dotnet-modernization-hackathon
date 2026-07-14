@@ -1,0 +1,11 @@
+{
+  "name": "contosoinsurance-e2e",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "latest"
+  }
+}
