@@ -1,0 +1,39 @@
+@page "/login"
+@attribute [AllowAnonymous]
+
+<PageTitle>Sign in</PageTitle>
+
+<h1>Sign in</h1>
+
+@if (HasError)
+{
+    <p style="color: red;">Invalid credentials.</p>
+}
+
+<form method="post" action="/auth/login">
+    <AntiforgeryToken />
+    <input type="hidden" name="returnUrl" value="@FormReturnUrl" />
+    <p>
+        <label for="username">Username:</label>
+        <input id="username" name="username" autocomplete="username" />
+    </p>
+    <p>
+        <label for="password">Password:</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" />
+    </p>
+    <button type="submit">Sign in</button>
+</form>
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? Error { get; set; }
+
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "ReturnUrl")]
+    public string? CookieReturnUrl { get; set; }
+
+    private bool HasError => !string.IsNullOrWhiteSpace(Error);
+    private string? FormReturnUrl => ReturnUrl ?? CookieReturnUrl;
+}

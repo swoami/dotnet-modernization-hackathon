@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using ContosoInsurance.Common.Config;
 using ContosoInsurance.Data.Models;
+using ContosoInsurance.Data.Security;
 
 namespace ContosoInsurance.Data
 {
@@ -42,20 +43,7 @@ namespace ContosoInsurance.Data
 
         public bool VerifyPassword(User user, string password)
         {
-            if (user == null) return false;
-            var candidate = HashSha1(password + user.Salt);
-            return string.Equals(candidate, user.PasswordHash, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static string HashSha1(string input)
-        {
-            using (var sha = SHA1.Create()) // LEGACY: weak
-            {
-                var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(input));
-                var sb = new StringBuilder(bytes.Length * 2);
-                foreach (var b in bytes) sb.Append(b.ToString("x2"));
-                return sb.ToString();
-            }
+            return LegacyPasswordVerifier.Verify(user, password);
         }
     }
 }

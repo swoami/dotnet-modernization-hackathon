@@ -6,6 +6,7 @@ namespace ContosoInsurance.Data.Models
     {
         public int ClaimId { get; set; }
         public int PolicyId { get; set; }
+        public Policy Policy { get; set; }
         public string PolicyNumber { get; set; }
         public string ClaimantName { get; set; }
         public decimal Amount { get; set; }
