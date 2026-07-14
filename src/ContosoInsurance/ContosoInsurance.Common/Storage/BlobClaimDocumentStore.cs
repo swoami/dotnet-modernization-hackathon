@@ -26,7 +26,12 @@ namespace ContosoInsurance.Common.Storage
         {
             var containerClient = _serviceClient.GetBlobContainerClient(containerName);
             await containerClient.CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: ct);
-            await containerClient.UploadBlobAsync(blobName, content, ct);
+
+            // Re-uploading a document for the same claim/blob name is a normal, expected
+            // scenario (e.g. replacing a photo/estimate). Without overwrite: true this throws
+            // a 409 BlobAlreadyExists RequestFailedException, which crashes the Blazor circuit.
+            var blobClient = containerClient.GetBlobClient(blobName);
+            await blobClient.UploadAsync(content, overwrite: true, cancellationToken: ct);
         }
     }
 }
