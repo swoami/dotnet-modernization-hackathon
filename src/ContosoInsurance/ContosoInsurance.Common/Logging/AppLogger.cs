@@ -1,45 +1,65 @@
 using System;
 using System.Diagnostics;
-using log4net;
-using log4net.Config;
+using Microsoft.Extensions.Logging;
 
 namespace ContosoInsurance.Common.Logging
 {
     /// <summary>
-    /// Legacy static logger wrapping log4net. Also writes to System.Diagnostics.Trace
+    /// Static logger backed by Microsoft.Extensions.Logging. Also writes to System.Diagnostics.Trace
     /// so ops can hook into ETW listeners.
     /// </summary>
     public static class AppLogger
     {
-        private static readonly ILog _log = LogManager.GetLogger("ContosoInsurance");
+        private static readonly object _syncRoot = new object();
+        private static ILoggerFactory _loggerFactory;
+        private static ILogger _logger;
         private static bool _configured;
 
         public static void Configure()
         {
             if (_configured) return;
-            XmlConfigurator.Configure();
-            _configured = true;
+
+            lock (_syncRoot)
+            {
+                if (_configured) return;
+
+                _loggerFactory = LoggerFactory.Create(builder =>
+                {
+                    builder.AddConsole();
+                });
+                _logger = _loggerFactory.CreateLogger("ContosoInsurance");
+                _configured = true;
+            }
         }
 
         public static void Info(string message)
         {
-            _log.Info(message);
+            Logger.LogInformation(message);
             Trace.WriteLine("[INFO] " + message);
         }
 
         public static void Warn(string message)
         {
-            _log.Warn(message);
+            Logger.LogWarning(message);
             Trace.TraceWarning(message);
         }
 
         public static void Error(string message, Exception ex = null)
         {
             if (ex != null)
-                _log.Error(message, ex);
+                Logger.LogError(ex, message);
             else
-                _log.Error(message);
+                Logger.LogError(message);
             Trace.TraceError(message + " :: " + (ex?.ToString() ?? "<no exception>"));
+        }
+
+        private static ILogger Logger
+        {
+            get
+            {
+                Configure();
+                return _logger;
+            }
         }
     }
 }

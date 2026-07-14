@@ -6,7 +6,7 @@ A deliberately-legacy claims processing sample for the Legacy Breakers hackathon
 
 ```
 ContosoInsurance.sln
-├── ContosoInsurance.Common        Class library (log4net, ConfigurationManager helpers)
+├── ContosoInsurance.Common        Class library (Microsoft.Extensions.Logging, IConfiguration helpers)
 ├── ContosoInsurance.Data          Class library (ADO.NET, SqlCommand/SqlDataReader)
 ├── ContosoInsurance.Services      WCF service host (SOAP claim scoring)
 ├── ContosoInsurance.Web           ASP.NET WebForms agent portal
@@ -21,14 +21,14 @@ Target framework: **.NET Framework 4.6.1** (all projects).
 | Concern | Legacy pattern | Where to look |
 | --- | --- | --- |
 | Framework | .NET Fx 4.6.1, `packages.config` | every `*.csproj` |
-| Config | `Web.config` / `App.config` + `ConfigurationManager.AppSettings` | `Common/Config/ConfigHelper.cs` |
+| Config | `appsettings.json` + `IConfiguration` (`AppSettings` / `ConnectionStrings`) | `Common/Config/ConfigHelper.cs` |
 | Data access | Raw ADO.NET, inline SQL, string-concat parameters in one place | `Data/ClaimsRepository.cs` |
-| Logging | `log4net` 2.0.8 (has known CVEs) + `Trace.WriteLine` | `Common/Logging/AppLogger.cs` |
+| Logging | `Microsoft.Extensions.Logging` console provider + `Trace.WriteLine` | `Common/Logging/AppLogger.cs` |
 | Local file I/O | Writes to `C:\ClaimsFiles\` and `C:\Exports\` | `Web/Upload.aspx.cs`, `Worker/ClaimsExporterService.cs` |
 | Secrets | Plain-text SQL user/password in config | `Web/Web.config`, `Worker/App.config` |
 | Hosting | IIS (Web + WCF) + Windows Service (Worker) | `*.csproj`, `Worker/ProjectInstaller.cs` |
 | Comms | WCF `basicHttpBinding` SOAP | `Services/*` |
-| Packages | Outdated `Newtonsoft.Json 11.0.2`, `log4net 2.0.8` | `packages.config` |
+| Packages | `Microsoft.Extensions.*` package references in Common | `Common/*.csproj` |
 
 ## Building (optional — not required for the hackathon)
 
