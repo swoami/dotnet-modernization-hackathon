@@ -271,7 +271,7 @@ function render() {
         const dn = isDone(task);
         const mark = task.manual
           ? `<input type="checkbox" data-id="${task.id}" ${dn ? "checked" : ""}>`
-          : (dn ? "✓" : "·");
+          : `<input type="checkbox" disabled title="auto-detected from repo scan" ${dn ? "checked" : ""}>`;
         return `<div class="task ${dn ? "done" : ""}"><span class="mark">${mark}</span><span>${task.t}</span></div>`;
       }).join("")}`).join("");
     return `<div class="track">
