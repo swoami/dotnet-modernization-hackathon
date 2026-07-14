@@ -1,7 +1,12 @@
 @page "/upload"
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @using System.Globalization
+@using ContosoInsurance.Common.Storage
+@using ContosoInsurance.Data
+@using Microsoft.EntityFrameworkCore
 @inject IConfiguration Configuration
+@inject IClaimDocumentStore DocumentStore
+@inject IDbContextFactory<ContosoDbContext> DbFactory
 @inject ILogger<Upload> Logger
 
 <PageTitle>Upload Claim Document</PageTitle>
@@ -24,6 +29,9 @@
 }
 
 @code {
+    // Blob container provisioned by infra/modules/storage.bicep for claim document uploads.
+    private const string DocumentContainerName = "claim-docs";
+
     private int? ClaimId { get; set; }
     private IBrowserFile? selectedFile;
     private string? Status { get; set; }
@@ -55,8 +63,6 @@
             return;
         }
 
-        var root = Configuration["AppSettings:ClaimDocumentsRoot"] ?? @"C:\ClaimsFiles";
-        var rootFullPath = Path.GetFullPath(root);
         var fileName = Path.GetFileName(selectedFile.Name);
         if (string.IsNullOrWhiteSpace(fileName))
         {
@@ -64,20 +70,26 @@
             return;
         }
 
-        var claimFolder = Path.Combine(rootFullPath, ClaimId.Value.ToString(CultureInfo.InvariantCulture));
-        var targetFullPath = Path.GetFullPath(Path.Combine(claimFolder, fileName));
-        if (!IsPathInsideRoot(targetFullPath, rootFullPath))
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var claim = await db.Claims.SingleOrDefaultAsync(c => c.ClaimId == ClaimId.Value);
+        if (claim is null)
         {
-            Status = "Invalid file path.";
+            Status = $"Claim {ClaimId.Value} not found.";
             return;
         }
 
-        Directory.CreateDirectory(claimFolder);
-        await using var stream = File.Create(targetFullPath);
-        await selectedFile.OpenReadStream(maxBytes).CopyToAsync(stream);
+        var blobName = $"{ClaimId.Value.ToString(CultureInfo.InvariantCulture)}/{fileName}";
 
-        Logger.LogInformation("Saved claim document {Path}", targetFullPath);
-        Status = "Uploaded to " + targetFullPath;
+        await using (var stream = selectedFile.OpenReadStream(maxBytes))
+        {
+            await DocumentStore.UploadAsync(DocumentContainerName, blobName, stream);
+        }
+
+        claim.DocumentPath = blobName;
+        await db.SaveChangesAsync();
+
+        Logger.LogInformation("Saved claim document {BlobName} for claim {ClaimId}", blobName, ClaimId.Value);
+        Status = $"Uploaded {fileName} for claim {ClaimId.Value}.";
     }
 
     private long GetMaxUploadBytes()
@@ -86,14 +98,4 @@
             ? configured
             : 10 * 1024 * 1024;
     }
-
-    private static bool IsPathInsideRoot(string targetFullPath, string rootFullPath)
-    {
-        var normalizedRoot = rootFullPath.EndsWith(Path.DirectorySeparatorChar)
-            ? rootFullPath
-            : rootFullPath + Path.DirectorySeparatorChar;
-
-        return targetFullPath.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase);
-    }
 }
-

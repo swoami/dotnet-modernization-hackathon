@@ -37,6 +37,12 @@ var commonEnv = [
     value: storageAccountName
   }
   {
+    // Consumed by ContosoInsurance.Common.Storage.ClaimDocumentStoreExtensions.AddClaimDocumentStore
+    // (Web and Worker) to build the BlobServiceClient via Managed Identity.
+    name: 'AzureStorage__AccountUri'
+    value: 'https://${storageAccountName}.blob.core.windows.net'
+  }
+  {
     name: 'AZURE_CLIENT_ID'
     value: userAssignedIdentityClientId
   }
@@ -45,6 +51,10 @@ var commonEnv = [
     value: keyVaultUri
   }
 ]
+
+// Web calls the Services app's claim-scoring endpoint over the Container Apps
+// environment's internal DNS. Falls back to localhost only when Services isn't deployed.
+var scoringEndpoint = deployServicesApp ? 'https://${services.?properties.?configuration.?ingress.?fqdn}' : 'http://localhost:8080'
 
 var userAssignedIdentity = {
   '${userAssignedIdentityId}': {}
@@ -91,11 +101,47 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
         {
           name: 'web'
           image: imageWeb
-          env: commonEnv
+          env: concat(commonEnv, [
+            {
+              name: 'AppSettings__ClaimScoringEndpoint'
+              value: scoringEndpoint
+            }
+          ])
           resources: {
             cpu: json('0.25')
             memory: '0.5Gi'
           }
+          // Web exposes an anonymous /health endpoint (MapHealthChecks in Program.cs).
+          probes: [
+            {
+              type: 'Startup'
+              httpGet: {
+                path: '/health'
+                port: 8080
+              }
+              initialDelaySeconds: 5
+              periodSeconds: 5
+              failureThreshold: 12
+            }
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/health'
+                port: 8080
+              }
+              periodSeconds: 30
+              failureThreshold: 3
+            }
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: '/health'
+                port: 8080
+              }
+              periodSeconds: 10
+              failureThreshold: 3
+            }
+          ]
         }
       ]
       scale: {
@@ -137,6 +183,34 @@ resource services 'Microsoft.App/containerApps@2024-03-01' = if (deployServicesA
             cpu: json('0.25')
             memory: '0.5Gi'
           }
+          // Services has no /health endpoint yet, so probe TCP reachability of the ingress port.
+          probes: [
+            {
+              type: 'Startup'
+              tcpSocket: {
+                port: 8080
+              }
+              initialDelaySeconds: 5
+              periodSeconds: 5
+              failureThreshold: 12
+            }
+            {
+              type: 'Liveness'
+              tcpSocket: {
+                port: 8080
+              }
+              periodSeconds: 30
+              failureThreshold: 3
+            }
+            {
+              type: 'Readiness'
+              tcpSocket: {
+                port: 8080
+              }
+              periodSeconds: 10
+              failureThreshold: 3
+            }
+          ]
         }
       ]
       scale: {
@@ -172,6 +246,9 @@ resource worker 'Microsoft.App/containerApps@2024-03-01' = {
             cpu: json('0.25')
             memory: '0.5Gi'
           }
+          // The worker registers health checks (DbContext + blob container) but hosts no HTTP
+          // endpoint and has no ingress, so no HTTP/TCP probe target exists. Add probes here
+          // once the worker exposes a /health listener.
         }
       ]
       // The worker runs a continuous timer loop, so it must stay warm instead of scaling to zero.
