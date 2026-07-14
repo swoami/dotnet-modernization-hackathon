@@ -68,10 +68,10 @@ iterate.
 - [x] `Web`, `Services`, `Data`, `Common` target `net9.0`
 - [x] No `packages.config`, no `Web.config`
 - [x] `Program.cs` composes the app with DI, config, logging, cookie auth
-- [ ] `ContosoDbContext` in use; ADO.NET removed from `Data/`
-- [ ] Concat-SQL search converted to safe query
+- [x] `ContosoDbContext` in use; ADO.NET removed from `Data/`
+- [x] Concat-SQL search converted to safe query
 - [x] SHA1 password hashing replaced with a modern KDF (or Entra ID stretch)
-- [ ] `ILogger` everywhere; log4net removed
+- [x] `ILogger` everywhere; log4net removed
 - [x] Scoring endpoint answers over HTTP JSON, no more WCF client
 
 ---
