@@ -19,6 +19,14 @@ docs/tracker-status.js
 # Node (in case anyone adds a Blazor/JS asset pipeline)
 node_modules/
 
+# BMAD METHOD tooling — regenerated locally via the BMAD installer
+# (`npx bmad-method install`). Do NOT commit; teammates reinstall after pulling.
+.agents/
+.claude/
+.github/agents/
+_bmad/
+_bmad-output/
+
 # OS
 Thumbs.db
 .DS_Store
