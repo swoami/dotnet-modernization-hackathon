@@ -126,7 +126,7 @@ iterate.
 - [ ] No `ServiceBase`, `ProjectInstaller`, `System.Timers.Timer`
 - [ ] `App.config` gone; `appsettings.json` + typed options
 - [ ] Exports written to Blob container `claim-exports` via Managed Identity
-- [ ] Uploads (from Web) written to Blob container `claim-docs`
+- [x] Uploads (from Web) written to Blob container `claim-docs`
 - [ ] `ExportLog` row inserted per export
 - [ ] `ILogger` everywhere; log4net removed
 
