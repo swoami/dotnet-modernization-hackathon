@@ -4,7 +4,9 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ContosoInsurance.Common.Storage;
 using ContosoInsurance.Data;
+using ContosoInsurance.Data.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -16,15 +18,18 @@ namespace ContosoInsurance.Worker
     {
         private readonly ILogger<ClaimsExporterService> _logger;
         private readonly ExportOptions _options;
+        private readonly IClaimDocumentStore _store;
         private readonly IServiceScopeFactory _scopeFactory;
 
         public ClaimsExporterService(
             ILogger<ClaimsExporterService> logger,
             IOptions<ExportOptions> options,
+            IClaimDocumentStore store,
             IServiceScopeFactory scopeFactory)
         {
             _logger = logger;
             _options = options.Value;
+            _store = store;
             _scopeFactory = scopeFactory;
         }
 
@@ -62,11 +67,9 @@ namespace ContosoInsurance.Worker
             }
         }
 
-        private async Task ExportAsync(CancellationToken cancellationToken)
+        internal async Task ExportAsync(CancellationToken cancellationToken)
         {
-            var root = _options.ExportRoot;
-            Directory.CreateDirectory(root);
-            var file = Path.Combine(root, "claims-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + ".csv");
+            var blobName = "claims-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + ".csv";
 
             await using var scope = _scopeFactory.CreateAsyncScope();
             var repo = scope.ServiceProvider.GetRequiredService<ClaimsRepository>();
@@ -86,8 +89,22 @@ namespace ContosoInsurance.Worker
                     c.Score?.ToString(CultureInfo.InvariantCulture) ?? ""));
             }
 
-            await File.WriteAllTextAsync(file, sb.ToString(), Encoding.UTF8, cancellationToken);
-            _logger.LogInformation("Wrote export {File} ({Count} rows)", file, claims.Count);
+            var csvBytes = Encoding.UTF8.GetBytes(sb.ToString());
+            using var stream = new MemoryStream(csvBytes);
+            await _store.UploadAsync(_options.ContainerName, blobName, stream, cancellationToken);
+
+            _logger.LogInformation("Uploaded export blob {BlobName} ({Count} rows) to container {Container}",
+                blobName, claims.Count, _options.ContainerName);
+
+            // Persist audit record
+            var db = scope.ServiceProvider.GetRequiredService<ContosoDbContext>();
+            db.ExportLogs.Add(new ExportLog
+            {
+                BlobName = blobName,
+                RowCount = claims.Count,
+                ExportedAtUtc = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync(cancellationToken);
         }
 
         private static string Csv(string? v)

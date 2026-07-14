@@ -3,6 +3,9 @@ name: Deploy ContosoInsurance
 on:
   push:
     branches: [main]
+    paths:
+      - 'src/ContosoInsurance/**'
+      - 'infra/**'
   workflow_dispatch:
     inputs:
       provision:
@@ -106,10 +109,32 @@ jobs:
       # `azd provision` validates at subscription scope even for a resourceGroup-scoped template
       # (a known azd behavior), which this hackathon SP/user only have RG-scoped permissions for.
       # Deploy directly with `az deployment group create` (RG-scope only, matches our actual
-      # permissions) and bridge its outputs into the azd environment so `azd deploy` below can
-      # still find the registry/app names it needs.
+      # permissions). Outputs are bridged into the azd environment separately, in the always-run
+      # step below, since app-only deploys need them too and shouldn't require re-provisioning.
       - name: Provision Azure infrastructure
         if: ${{ steps.azure-config.outputs.configured == 'true' && github.event_name == 'workflow_dispatch' && github.event.inputs.provision == 'true' }}
+        working-directory: src/ContosoInsurance
+        env:
+          AZURE_RESOURCE_GROUP: ${{ env.AZURE_RESOURCE_GROUP }}
+          AZURE_ENV_NAME: ${{ env.AZURE_ENV_NAME }}
+        run: |
+          set -euo pipefail
+          DEPLOYMENT_NAME="azd-${AZURE_ENV_NAME}"
+          az deployment group create \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$DEPLOYMENT_NAME" \
+            --template-file ../../infra/main.bicep \
+            --parameters ../../infra/main.bicepparam \
+            --output none
+
+      # `azd deploy <service>` (used below, one service at a time to avoid OOM) needs
+      # AZURE_CONTAINER_REGISTRY_ENDPOINT and friends in its local azd env, but that local env is
+      # never persisted between CI runs (fresh checkout every time) — it's only populated when the
+      # "Provision Azure infrastructure" step above actually runs. Bridge outputs from the *existing*
+      # deployment (created once via provision) into azd env on every run, regardless of whether we
+      # just provisioned, so ordinary app-only deploys keep working without re-provisioning.
+      - name: Load Azure infra outputs into azd environment
+        if: steps.azure-config.outputs.configured == 'true'
         working-directory: src/ContosoInsurance
         env:
           AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
@@ -122,12 +147,6 @@ jobs:
         run: |
           set -euo pipefail
           DEPLOYMENT_NAME="azd-${AZURE_ENV_NAME}"
-          az deployment group create \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --name "$DEPLOYMENT_NAME" \
-            --template-file ../../infra/main.bicep \
-            --parameters ../../infra/main.bicepparam \
-            --output none
 
           # `az deployment group show`'s outputs come back with mangled key casing for
           # SCREAMING_SNAKE_CASE names (confirmed: the compiled ARM template has the correct
@@ -193,4 +212,14 @@ jobs:
           AZURE_LOCATION: ${{ env.AZURE_LOCATION }}
           AZURE_RESOURCE_GROUP: ${{ env.AZURE_RESOURCE_GROUP }}
           AZD_AUTH_TYPE: ${{ env.AZD_AUTH_TYPE }}
-        run: azd deploy --no-prompt
+        run: |
+          set -euo pipefail
+          # `azd deploy` (no args) packages/builds all three services' Docker images
+          # concurrently. Each build stage pulls in the full dotnet/sdk:9.0 image and
+          # runs its own dotnet restore/publish; three of these in parallel exceed the
+          # GitHub-hosted runner's ~7GB RAM and the OOM killer kills a build process
+          # (surfaces as "building image: signal: killed" with no compiler error).
+          # Deploy one service at a time instead so only one Docker build runs at once.
+          for service in contosoinsurance-services contosoinsurance-worker contosoinsurance-web; do
+            azd deploy "$service" --no-prompt
+          done

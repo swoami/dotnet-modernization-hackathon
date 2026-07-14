@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ContosoInsurance.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class AddExportLog : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,19 +15,19 @@ namespace ContosoInsurance.Data.Migrations
                 name: "dbo");
 
             migrationBuilder.CreateTable(
-                name: "ExportLog",
+                name: "ExportLogs",
                 schema: "dbo",
                 columns: table => new
                 {
-                    ExportId = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    ExportedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    FilePath = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: false),
-                    RowCount = table.Column<int>(type: "int", nullable: false)
+                    BlobName = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: false),
+                    RowCount = table.Column<int>(type: "int", nullable: false),
+                    ExportedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ExportLog", x => x.ExportId);
+                    table.PrimaryKey("PK_ExportLogs", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -58,6 +58,7 @@ namespace ContosoInsurance.Data.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Username = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    Salt = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: false),
                     Role = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false, defaultValue: "Agent")
                 },
                 constraints: table =>
@@ -94,31 +95,10 @@ namespace ContosoInsurance.Data.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Claims_FiledOn",
-                schema: "dbo",
-                table: "Claims",
-                column: "FiledOn",
-                descending: new bool[0]);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Claims_PolicyId",
                 schema: "dbo",
                 table: "Claims",
                 column: "PolicyId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Policies_PolicyNumber",
-                schema: "dbo",
-                table: "Policies",
-                column: "PolicyNumber",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Users_Username",
-                schema: "dbo",
-                table: "Users",
-                column: "Username",
-                unique: true);
         }
 
         /// <inheritdoc />
@@ -129,7 +109,7 @@ namespace ContosoInsurance.Data.Migrations
                 schema: "dbo");
 
             migrationBuilder.DropTable(
-                name: "ExportLog",
+                name: "ExportLogs",
                 schema: "dbo");
 
             migrationBuilder.DropTable(

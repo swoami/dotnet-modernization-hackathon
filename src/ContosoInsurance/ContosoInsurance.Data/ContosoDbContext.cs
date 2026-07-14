@@ -92,16 +92,14 @@ public class ContosoDbContext : DbContext
 
         modelBuilder.Entity<ExportLog>(entity =>
         {
-            entity.ToTable("ExportLog", "dbo");
-            entity.HasKey(log => log.ExportId);
+            entity.ToTable("ExportLogs", "dbo");
+            entity.HasKey(e => e.Id);
 
-            entity.Property(log => log.ExportedAt)
-                .HasDefaultValueSql("SYSUTCDATETIME()");
-            entity.Property(log => log.FilePath)
+            entity.Property(e => e.BlobName)
                 .HasMaxLength(512)
                 .IsRequired();
-            entity.Property(log => log.RowCount)
-                .HasColumnName("RowCount");
+            entity.Property(e => e.ExportedAtUtc)
+                .HasDefaultValueSql("SYSUTCDATETIME()");
         });
     }
 }

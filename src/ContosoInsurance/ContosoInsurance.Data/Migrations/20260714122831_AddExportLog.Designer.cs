@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ContosoInsurance.Data.Migrations
 {
     [DbContext(typeof(ContosoDbContext))]
-    [Migration("20260714130410_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260714122831_AddExportLog")]
+    partial class AddExportLog
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -73,10 +73,6 @@ namespace ContosoInsurance.Data.Migrations
 
                     b.HasKey("ClaimId");
 
-                    b.HasIndex("FiledOn")
-                        .IsDescending()
-                        .HasDatabaseName("IX_Claims_FiledOn");
-
                     b.HasIndex("PolicyId");
 
                     b.ToTable("Claims", "dbo");
@@ -84,29 +80,28 @@ namespace ContosoInsurance.Data.Migrations
 
             modelBuilder.Entity("ContosoInsurance.Data.Models.ExportLog", b =>
                 {
-                    b.Property<int>("ExportId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ExportId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("ExportedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
-
-                    b.Property<string>("FilePath")
+                    b.Property<string>("BlobName")
                         .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)");
 
+                    b.Property<DateTime>("ExportedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
                     b.Property<int>("RowCount")
-                        .HasColumnType("int")
-                        .HasColumnName("RowCount");
+                        .HasColumnType("int");
 
-                    b.HasKey("ExportId");
+                    b.HasKey("Id");
 
-                    b.ToTable("ExportLog", "dbo");
+                    b.ToTable("ExportLogs", "dbo");
                 });
 
             modelBuilder.Entity("ContosoInsurance.Data.Models.Policy", b =>
@@ -144,9 +139,6 @@ namespace ContosoInsurance.Data.Migrations
 
                     b.HasKey("PolicyId");
 
-                    b.HasIndex("PolicyNumber")
-                        .IsUnique();
-
                     b.ToTable("Policies", "dbo");
                 });
 
@@ -170,15 +162,17 @@ namespace ContosoInsurance.Data.Migrations
                         .HasColumnType("nvarchar(32)")
                         .HasDefaultValue("Agent");
 
+                    b.Property<string>("Salt")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
                     b.HasKey("UserId");
-
-                    b.HasIndex("Username")
-                        .IsUnique();
 
                     b.ToTable("Users", "dbo");
                 });

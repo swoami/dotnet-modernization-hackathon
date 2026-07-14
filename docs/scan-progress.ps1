@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
   Scans the repository (remote track branches preferred) and auto-detects
-  hackathon task completion. Writes docs/tracker-status.js consumed by
+  hackathon task completion. Writes docs/progress-data.js consumed by
   docs/tracker.html.
 
 .EXAMPLE
@@ -200,7 +200,12 @@ function Invoke-Scan {
         tasks       = $t
     }
     $js = "window.REPO_STATUS = " + ($payload | ConvertTo-Json -Depth 4) + ";"
-    Set-Content -Path (Join-Path $RepoRoot "docs/tracker-status.js") -Value $js -Encoding UTF8
+    # NOTE: filename deliberately avoids the word "tracker" — many ad-blocker /
+    # privacy-extension filter lists (EasyPrivacy, Brave Shields, Firefox ETP)
+    # block any request URL matching *tracker*, which silently breaks the
+    # dynamic <script src> load in tracker.html (looks like a 404/network
+    # error client-side, but nothing is actually wrong server-side).
+    Set-Content -Path (Join-Path $RepoRoot "docs/progress-data.js") -Value $js -Encoding UTF8
 
     $done = @($t.Values | Where-Object { $_ }).Count
     Write-Host ("[{0}] scanned A={1} B={2} C={3} team={4} -> {5}/{6} auto-tasks detected done" -f `
