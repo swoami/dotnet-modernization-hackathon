@@ -2,7 +2,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("ContosoInsurance.Web")]
-[assembly: AssemblyDescription("Contoso Claims Portal (WebForms)")]
+[assembly: AssemblyDescription("Contoso Claims Portal (Blazor Server)")]
 [assembly: AssemblyCompany("Contoso")]
 [assembly: AssemblyProduct("ContosoInsurance")]
 [assembly: ComVisible(false)]

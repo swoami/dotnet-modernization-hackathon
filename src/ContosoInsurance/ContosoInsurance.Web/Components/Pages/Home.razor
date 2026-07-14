@@ -1,0 +1,108 @@
+@page "/"
+@using System.Net
+@using ContosoInsurance.Data
+@using ContosoInsurance.Data.Models
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<ContosoDbContext> DbFactory
+@inject IHttpClientFactory HttpClientFactory
+@inject ILogger<Home> Logger
+
+<PageTitle>Recent Claims</PageTitle>
+
+<h1>Recent Claims</h1>
+
+@if (isLoading)
+{
+    <p>Loading claims...</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr>
+                <th>ClaimId</th>
+                <th>Policy.PolicyNumber</th>
+                <th>ClaimantName</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>FiledOn</th>
+                <th>Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var claim in claims)
+            {
+                <tr>
+                    <td>@claim.ClaimId</td>
+                    <td>@claim.Policy?.PolicyNumber</td>
+                    <td>@claim.ClaimantName</td>
+                    <td>@claim.Amount.ToString("C")</td>
+                    <td>@claim.Status</td>
+                    <td>@claim.FiledOn.ToString("yyyy-MM-dd")</td>
+                    <td>@claim.Score</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<p><a href="/upload">Upload a claim document</a></p>
+
+@code {
+    private readonly List<Claim> claims = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var recentClaims = await db.Claims
+            .Include(claim => claim.Policy)
+            .OrderByDescending(claim => claim.FiledOn)
+            .Take(50)
+            .AsNoTracking()
+            .ToListAsync();
+
+        claims.AddRange(recentClaims);
+        await ScoreMissingClaimsAsync(claims);
+        isLoading = false;
+    }
+
+    private async Task ScoreMissingClaimsAsync(IEnumerable<Claim> recentClaims)
+    {
+        var client = HttpClientFactory.CreateClient("scoring");
+
+        foreach (var claim in recentClaims)
+        {
+            if (claim.Score.HasValue)
+            {
+                continue;
+            }
+
+            try
+            {
+                using var response = await client.PostAsJsonAsync($"claims/{claim.ClaimId}/score", new { });
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                {
+                    Logger.LogWarning("Scoring failed for claim {ClaimId}: claim not found", claim.ClaimId);
+                    continue;
+                }
+
+                response.EnsureSuccessStatusCode();
+                var score = await response.Content.ReadFromJsonAsync<ScoringResponse>();
+                if (score == null)
+                {
+                    Logger.LogWarning("Scoring failed for claim {ClaimId}: empty response", claim.ClaimId);
+                    continue;
+                }
+
+                claim.Score = score.Score;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Scoring failed for claim {ClaimId}", claim.ClaimId);
+            }
+        }
+    }
+
+    private sealed record ScoringResponse(int ClaimId, int Score, string ModelVersion);
+}
