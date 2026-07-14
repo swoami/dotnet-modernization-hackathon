@@ -1,0 +1,2 @@
+Roundtrip upload fixture for Contoso Claims Portal.
+This file is uploaded twice for claim 5 to verify blob overwrite handling.
