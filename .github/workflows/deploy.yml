@@ -1,0 +1,107 @@
+name: Deploy ContosoInsurance
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      provision:
+        description: Run azd provision for first-time or manual infrastructure bootstrap.
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Build, test, and deploy
+    runs-on: ubuntu-latest
+    env:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      # Set AZURE_ENV_NAME in repo/environment vars (for example: contoso-insurance-team3).
+      AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+      AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+      # Expected repo/environment var value: rg-swo-gh-hackathon-team3.
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      AZD_AUTH_TYPE: OIDC
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Build solution
+        working-directory: src/ContosoInsurance
+        run: dotnet build ContosoInsurance.sln --configuration Release
+
+      - name: Test solution
+        working-directory: src/ContosoInsurance
+        run: dotnet test ContosoInsurance.sln --configuration Release --no-build
+
+      # OIDC exchanges GitHub's short-lived identity token for Azure access, so no client secret is required.
+      - name: Login to Azure with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install Azure Developer CLI
+        uses: Azure/setup-azd@v2
+
+      # azd needs an active environment in CI, so re-select it when it exists or create it once from repo variables.
+      - name: Select or create azd environment
+        working-directory: src/ContosoInsurance
+        env:
+          AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ env.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
+          AZURE_ENV_NAME: ${{ env.AZURE_ENV_NAME }}
+          AZURE_LOCATION: ${{ env.AZURE_LOCATION }}
+          AZURE_RESOURCE_GROUP: ${{ env.AZURE_RESOURCE_GROUP }}
+          AZD_AUTH_TYPE: ${{ env.AZD_AUTH_TYPE }}
+        run: |
+          set -euo pipefail
+          AZURE_RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-rg-swo-gh-hackathon-team3}"
+          if azd env select "$AZURE_ENV_NAME" --no-prompt; then
+            echo "Selected existing azd environment: $AZURE_ENV_NAME"
+          else
+            azd env new "$AZURE_ENV_NAME" --location "$AZURE_LOCATION" --subscription "$AZURE_SUBSCRIPTION_ID" --no-prompt
+          fi
+          azd env set AZURE_LOCATION "$AZURE_LOCATION"
+          azd env set AZURE_RESOURCE_GROUP "$AZURE_RESOURCE_GROUP"
+          azd env set AZURE_SUBSCRIPTION_ID "$AZURE_SUBSCRIPTION_ID"
+
+      # Keep first-time infrastructure creation manual so regular main pushes only redeploy the app.
+      - name: Provision Azure infrastructure
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.provision == 'true' }}
+        working-directory: src/ContosoInsurance
+        env:
+          AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ env.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
+          AZURE_ENV_NAME: ${{ env.AZURE_ENV_NAME }}
+          AZURE_LOCATION: ${{ env.AZURE_LOCATION }}
+          AZURE_RESOURCE_GROUP: ${{ env.AZURE_RESOURCE_GROUP }}
+          AZD_AUTH_TYPE: ${{ env.AZD_AUTH_TYPE }}
+        run: azd provision --no-prompt
+
+      - name: Deploy application
+        working-directory: src/ContosoInsurance
+        env:
+          AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ env.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
+          AZURE_ENV_NAME: ${{ env.AZURE_ENV_NAME }}
+          AZURE_LOCATION: ${{ env.AZURE_LOCATION }}
+          AZURE_RESOURCE_GROUP: ${{ env.AZURE_RESOURCE_GROUP }}
+          AZD_AUTH_TYPE: ${{ env.AZD_AUTH_TYPE }}
+        run: azd deploy --no-prompt
