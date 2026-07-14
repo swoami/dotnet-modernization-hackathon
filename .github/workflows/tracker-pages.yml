@@ -40,7 +40,7 @@ jobs:
       - name: Fetch all remote branches (track/*, integration)
         run: git fetch origin '+refs/heads/*:refs/remotes/origin/*' --prune
 
-      - name: Generate tracker-status.js
+      - name: Generate progress-data.js
         shell: pwsh
         run: ./docs/scan-progress.ps1
 
@@ -51,11 +51,19 @@ jobs:
 
   deploy:
     needs: build
-    # Guard against the `github-pages` environment's branch-restricted deploys:
-    # it only permits deployments from `main`, so a workflow_dispatch or push
-    # on any other branch would otherwise hard-fail this job (red X) even
-    # though the `build` job above succeeded. Skip it gracefully instead.
-    if: github.ref == 'refs/heads/main'
+    # Deploy from main, integration, or any track/** branch so the live page
+    # actually reflects progress pushed straight to track branches, not just
+    # merges to main (a push-only trigger with a main-only deploy guard just
+    # rebuilds the artifact and throws it away — see docs/learnings.md).
+    # NOTE: this also requires the repo's `github-pages` environment
+    # (Settings > Environments > github-pages > Deployment branches) to
+    # allow `track/*` and `integration`, not just `main` — widen that policy
+    # too, or this job will fail with an environment-protection error on
+    # non-main pushes.
+    if: >-
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/integration' ||
+      startsWith(github.ref, 'refs/heads/track/')
     runs-on: ubuntu-latest
     environment:
       name: github-pages

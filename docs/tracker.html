@@ -309,7 +309,7 @@ document.addEventListener("change", ev => {
 
 function loadRepoStatus(cb) {
   const s = document.createElement("script");
-  s.src = "tracker-status.js?t=" + Date.now();
+  s.src = "progress-data.js?t=" + Date.now();
   const prevGeneratedAt = repo && repo.generatedAt;
   s.onload = () => {
     s.remove();
@@ -333,7 +333,7 @@ function syncNow() {
     btn.disabled = false;
     btn.textContent = "⟳ Sync now";
     const now = new Date().toLocaleTimeString();
-    const extra = !ok ? `sync failed at ${now} (tracker-status.js unreachable)`
+    const extra = !ok ? `sync failed at ${now} (progress-data.js unreachable — check ad-blocker/privacy extension)`
       : changed ? `synced ${now} — updated`
       : `synced ${now} — no change since last scan`;
     document.getElementById("status").dataset.lastSync = extra;
