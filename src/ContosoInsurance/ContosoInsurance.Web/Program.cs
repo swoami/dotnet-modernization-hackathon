@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Azure.Extensions.AspNetCore.DataProtection.Blobs;
 using Azure.Identity;
 using Azure.Storage.Blobs;
 using ContosoInsurance.Data;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -28,11 +30,24 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAntiforgery();
 
 var storageAccountName = builder.Configuration["AZURE_STORAGE_ACCOUNT_NAME"];
+BlobServiceClient? blobServiceClient = null;
 if (!string.IsNullOrWhiteSpace(storageAccountName))
 {
-    builder.Services.AddSingleton(new BlobServiceClient(
+    blobServiceClient = new BlobServiceClient(
         new Uri($"https://{storageAccountName}.blob.core.windows.net"),
-        new DefaultAzureCredential()));
+        new DefaultAzureCredential());
+    builder.Services.AddSingleton(blobServiceClient);
+}
+
+// Persist Data Protection keys to Azure Blob Storage so auth cookies survive
+// container restarts and remain valid across multiple replicas.
+var dataProtection = builder.Services.AddDataProtection()
+    .SetApplicationName("ContosoInsurance");
+if (blobServiceClient != null)
+{
+    var keyContainer = blobServiceClient.GetBlobContainerClient("dataprotection-keys");
+    var keyBlob = keyContainer.GetBlobClient("keys.xml");
+    dataProtection.PersistKeysToAzureBlobStorage(keyBlob);
 }
 
 builder.Services.AddDbContextFactory<ContosoDbContext>(options =>
@@ -74,6 +89,13 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
+
+// Ensure the blob container for Data Protection keys exists before the app starts.
+if (blobServiceClient != null)
+{
+    var keyContainer = blobServiceClient.GetBlobContainerClient("dataprotection-keys");
+    await keyContainer.CreateIfNotExistsAsync();
+}
 
 app.UseForwardedHeaders();
 
