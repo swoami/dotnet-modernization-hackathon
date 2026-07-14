@@ -88,7 +88,8 @@ function Invoke-Scan {
                 ((-not (Test-GrepAt $RA 'Newtonsoft\.Json' @("$S/*.csproj"))) -or
                  (Test-GrepAt $RA 'Newtonsoft\.Json"\s+Version="(1[3-9]|[2-9][0-9])\.' @("$S/*.csproj")))
     $t["A5"]  = (Test-FileAt $RA "$WEB/appsettings.json") -and (-not (Test-FileAt $RA "$WEB/Web.config"))
-    $t["A6"]  = (Test-AnyAt $RA 'ContosoInsurance\.Web/Pages/.*\.cshtml$') -and
+    $t["A6"]  = ((Test-AnyAt $RA 'ContosoInsurance\.Web/Pages/.*\.cshtml$') -or
+                 (Test-AnyAt $RA 'ContosoInsurance\.Web/Components/Pages/.*\.razor$')) -and
                 (-not (Test-AnyAt $RA 'ContosoInsurance\.Web/.*\.aspx$'))
     $t["A7"]  = (-not (Test-AnyAt $RA 'ContosoInsurance\.Services/.*\.svc$')) -and
                 (Test-GrepAt $RA 'MapPost' @("$SVC/*.cs"))
