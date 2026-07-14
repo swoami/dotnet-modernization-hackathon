@@ -59,8 +59,8 @@ GO
 IF NOT EXISTS (SELECT 1 FROM dbo.Claims)
 BEGIN
     INSERT INTO dbo.Claims (PolicyId, ClaimantName, Amount, Status, FiledOn, DocumentPath, Notes) VALUES
-        (1, N'Alice Johnson', 4200.00,  N'Pending',  DATEADD(day,-3, SYSUTCDATETIME()), N'C:\ClaimsFiles\1\photo.jpg', N'Rear-end collision'),
-        (2, N'Bob Smith',    18500.00,  N'Pending',  DATEADD(day,-7, SYSUTCDATETIME()), N'C:\ClaimsFiles\2\estimate.pdf', N'Water damage'),
+        (1, N'Alice Johnson', 4200.00,  N'Pending',  DATEADD(day,-3, SYSUTCDATETIME()), N'claim-docs/1/photo.jpg', N'Rear-end collision'),
+        (2, N'Bob Smith',    18500.00,  N'Pending',  DATEADD(day,-7, SYSUTCDATETIME()), N'claim-docs/2/estimate.pdf', N'Water damage'),
         (3, N'Carol Diaz',    1200.00,  N'Approved', DATEADD(day,-40, SYSUTCDATETIME()), NULL, N'Windshield replacement'),
         (4, N'David Nguyen', 25000.00,  N'Pending',  DATEADD(day,-1, SYSUTCDATETIME()), NULL, NULL),
         (5, N'Eve Patel',     9800.00,  N'Rejected', DATEADD(day,-60, SYSUTCDATETIME()), NULL, N'Out of policy period');

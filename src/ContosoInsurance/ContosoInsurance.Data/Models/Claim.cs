@@ -13,7 +13,7 @@ namespace ContosoInsurance.Data.Models
         public string? Status { get; set; } // Pending, Approved, Rejected, Paid
         public DateTime FiledOn { get; set; }
         public DateTime? ClosedOn { get; set; }
-        public string? DocumentPath { get; set; } // e.g. C:\ClaimsFiles\1234\claim.pdf
+        public string? DocumentPath { get; set; } // e.g. claim-docs/1234/claim.pdf (blob name)
         public int? Score { get; set; }
         public string? Notes { get; set; }
     }
