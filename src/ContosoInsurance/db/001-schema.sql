@@ -55,7 +55,7 @@ BEGIN
         ExportId    INT IDENTITY(1,1) PRIMARY KEY,
         ExportedAt  DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
         FilePath    NVARCHAR(512) NOT NULL,
-        RowCount    INT NOT NULL
+        [RowCount]  INT NOT NULL
     );
 END
 GO
