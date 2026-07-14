@@ -90,6 +90,8 @@ module keyVault 'modules/key-vault.bicep' = {
     location: location
     tags: tags
     tenantId: subscription().tenantId
+    sqlServerFqdn: sql.outputs.sqlServerFqdn
+    sqlDatabaseName: sql.outputs.sqlDatabaseName
   }
 }
 
@@ -163,8 +165,7 @@ module containerApps 'modules/container-apps.bicep' = {
     imageServices: imageServices
     imageWorker: imageWorker
     appInsightsConnectionString: appInsights.outputs.connectionString
-    sqlServerFqdn: sql.outputs.sqlServerFqdn
-    sqlDatabaseName: sql.outputs.sqlDatabaseName
+    sqlConnectionStringSecretUri: keyVault.outputs.sqlConnectionStringSecretUri
     storageAccountName: storage.outputs.name
     keyVaultUri: keyVault.outputs.uri
     deployServicesApp: deployServicesApp

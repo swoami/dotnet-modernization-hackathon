@@ -15,13 +15,11 @@ param imageServices string = 'mcr.microsoft.com/dotnet/samples:aspnetapp'
 param imageWorker string = 'mcr.microsoft.com/dotnet/samples:aspnetapp'
 
 param appInsightsConnectionString string
-param sqlServerFqdn string
-param sqlDatabaseName string
+param sqlConnectionStringSecretUri string
 param storageAccountName string
 param keyVaultUri string
 param deployServicesApp bool = true
 
-var sqlConnectionString = 'Server=tcp:${sqlServerFqdn},1433;Database=${sqlDatabaseName};Authentication=Active Directory Default;'
 var commonEnv = [
   {
     name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
@@ -32,7 +30,7 @@ var commonEnv = [
     // ContosoInsurance.Data (ClaimsRepository/PolicyRepository/UserRepository),
     // consumed by Web, Services, and (once DB-enabled) Worker on track a/b.
     name: 'ConnectionStrings__ContosoDb'
-    value: sqlConnectionString
+    secretRef: 'sql-connection-string'
   }
   {
     name: 'AZURE_STORAGE_ACCOUNT_NAME'
@@ -59,6 +57,14 @@ var registries = [
   }
 ]
 
+var secrets = [
+  {
+    name: 'sql-connection-string'
+    keyVaultUrl: sqlConnectionStringSecretUri
+    identity: userAssignedIdentityId
+  }
+]
+
 resource web 'Microsoft.App/containerApps@2024-03-01' = {
   name: 'contosoinsurance-web'
   location: location
@@ -72,6 +78,7 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
     configuration: {
       activeRevisionsMode: 'Single'
       registries: registries
+      secrets: secrets
       ingress: {
         external: true
         targetPort: 8080
@@ -111,6 +118,7 @@ resource services 'Microsoft.App/containerApps@2024-03-01' = if (deployServicesA
     configuration: {
       activeRevisionsMode: 'Single'
       registries: registries
+      secrets: secrets
       // Only Web should be public-facing; Services stays internal within the Container Apps environment.
       ingress: {
         external: false
@@ -151,6 +159,7 @@ resource worker 'Microsoft.App/containerApps@2024-03-01' = {
     configuration: {
       activeRevisionsMode: 'Single'
       registries: registries
+      secrets: secrets
     }
     template: {
       containers: [
