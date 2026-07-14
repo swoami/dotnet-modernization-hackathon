@@ -80,16 +80,26 @@
 
         var blobName = $"{ClaimId.Value.ToString(CultureInfo.InvariantCulture)}/{fileName}";
 
-        await using (var stream = selectedFile.OpenReadStream(maxBytes))
+        try
         {
-            await DocumentStore.UploadAsync(DocumentContainerName, blobName, stream);
+            await using (var stream = selectedFile.OpenReadStream(maxBytes))
+            {
+                await DocumentStore.UploadAsync(DocumentContainerName, blobName, stream);
+            }
+
+            claim.DocumentPath = blobName;
+            await db.SaveChangesAsync();
+
+            Logger.LogInformation("Saved claim document {BlobName} for claim {ClaimId}", blobName, ClaimId.Value);
+            Status = $"Uploaded {fileName} for claim {ClaimId.Value}.";
         }
-
-        claim.DocumentPath = blobName;
-        await db.SaveChangesAsync();
-
-        Logger.LogInformation("Saved claim document {BlobName} for claim {ClaimId}", blobName, ClaimId.Value);
-        Status = $"Uploaded {fileName} for claim {ClaimId.Value}.";
+        catch (Exception ex)
+        {
+            // Surface storage failures as a status message instead of letting them bubble up
+            // and terminate the Blazor Server circuit.
+            Logger.LogError(ex, "Failed to upload claim document {BlobName} for claim {ClaimId}", blobName, ClaimId.Value);
+            Status = "Upload failed. Please try again.";
+        }
     }
 
     private long GetMaxUploadBytes()

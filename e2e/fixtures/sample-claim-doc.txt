@@ -1,0 +1,3 @@
+Contoso Insurance claim attachment
+Claim: 1
+Document: Sample supporting note for upload e2e coverage.
