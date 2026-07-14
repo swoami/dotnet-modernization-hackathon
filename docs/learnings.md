@@ -25,6 +25,9 @@ Keep entries short. Bullets are fine. One-liners are fine.
   queries and a parameterized LINQ substring search.
 - **Identity's `PasswordHasher<TUser>` encapsulates a versioned PBKDF2 format** — use its
   `SuccessRehashNeeded` result to refresh a valid hash, rather than retaining a legacy verifier.
+- **Development seed accounts must be verifiable and documented** — seed exactly one unique
+  account per role with `PasswordHasher<User>`-compatible PBKDF2 hashes, and document the
+  intentionally public local-demo credential outside application configuration.
 
 ---
 

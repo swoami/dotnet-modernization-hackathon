@@ -41,6 +41,22 @@ Building the legacy app is **not required** to modernize it. If you insist:
 Update the `<connectionStrings>` in `Web/Web.config`, `Services/Web.config`, and
 `Worker/App.config`.
 
+## Local development login accounts
+
+After running `db/001-schema.sql` and `db/002-seed.sql`, use one of these
+development-only accounts to sign in locally. The seed script contains exactly
+one account for each currently seeded role; all use the documented demo
+password `Password1`.
+
+| Role | Username |
+| --- | --- |
+| Agent | `agent1` |
+| Adjuster | `adjuster` |
+| Admin | `admin` |
+
+These accounts are only for local development. Do not run the seed script
+against production or reuse its demo password.
+
 ## Do NOT
 
 - Deploy this app anywhere real.

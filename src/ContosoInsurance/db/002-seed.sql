@@ -1,12 +1,14 @@
 USE ContosoInsurance;
 GO
 
--- Development accounts use Password1. Values are ASP.NET Core Identity PBKDF2 hashes.
+-- Development-only login accounts: exactly one account for each currently seeded role.
+-- All use Password1; values are ASP.NET Core Identity PasswordHasher<User> PBKDF2 hashes.
+-- The update/insert below makes these fixed local-demo accounts idempotent.
 DECLARE @DemoUsers TABLE
 (
     Username NVARCHAR(64) NOT NULL PRIMARY KEY,
     PasswordHash NVARCHAR(128) NOT NULL,
-    Role NVARCHAR(32) NOT NULL
+    Role NVARCHAR(32) NOT NULL UNIQUE
 );
 
 INSERT INTO @DemoUsers (Username, PasswordHash, Role) VALUES
