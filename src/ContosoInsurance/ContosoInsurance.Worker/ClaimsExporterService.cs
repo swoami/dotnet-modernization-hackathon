@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Runtime.Versioning;
 using System.ServiceProcess;
 using System.Text;
 using System.Timers;
@@ -10,9 +11,10 @@ using ContosoInsurance.Data;
 
 namespace ContosoInsurance.Worker
 {
+    [SupportedOSPlatform("windows")]
     public class ClaimsExporterService : ServiceBase
     {
-        private Timer _timer;
+        private Timer? _timer;
 
         public ClaimsExporterService()
         {
@@ -57,7 +59,7 @@ namespace ContosoInsurance.Worker
 
         private static void Export()
         {
-            var root = ConfigHelper.GetSetting("ExportRoot", @"C:\Exports");
+            var root = ConfigHelper.GetSetting("ExportRoot", @"C:\Exports") ?? @"C:\Exports";
             Directory.CreateDirectory(root);
             var file = Path.Combine(root, "claims-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + ".csv");
 
@@ -82,7 +84,7 @@ namespace ContosoInsurance.Worker
             AppLogger.Info("Wrote export " + file + " (" + claims.Count + " rows)");
         }
 
-        private static string Csv(string v)
+        private static string Csv(string? v)
         {
             if (string.IsNullOrEmpty(v)) return "";
             if (v.IndexOfAny(new[] { ',', '"', '\n' }) < 0) return v;

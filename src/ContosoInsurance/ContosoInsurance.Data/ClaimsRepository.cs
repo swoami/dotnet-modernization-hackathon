@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using ContosoInsurance.Common.Config;
 using ContosoInsurance.Common.Logging;
 using ContosoInsurance.Data.Models;
@@ -47,7 +47,7 @@ namespace ContosoInsurance.Data
             return results;
         }
 
-        public Claim GetById(int claimId)
+        public Claim? GetById(int claimId)
         {
             const string sql = "SELECT " + ClaimColumns + " " + ClaimsFrom +
                                " WHERE c.ClaimId = @Id";
@@ -99,8 +99,8 @@ namespace ContosoInsurance.Data
                 cmd.Parameters.AddWithValue("@Amount", claim.Amount);
                 cmd.Parameters.AddWithValue("@Status", claim.Status ?? "Pending");
                 cmd.Parameters.AddWithValue("@FiledOn", claim.FiledOn == default(DateTime) ? DateTime.UtcNow : claim.FiledOn);
-                cmd.Parameters.AddWithValue("@DocumentPath", (object)claim.DocumentPath ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Notes", (object)claim.Notes ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@DocumentPath", claim.DocumentPath ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Notes", claim.Notes ?? (object)DBNull.Value);
                 conn.Open();
                 var newId = (int)cmd.ExecuteScalar();
                 AppLogger.Info("Inserted claim " + newId);

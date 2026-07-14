@@ -33,7 +33,7 @@ namespace ContosoInsurance.Common.Logging
             Trace.TraceWarning(message);
         }
 
-        public static void Error(string message, Exception ex = null)
+        public static void Error(string message, Exception? ex = null)
         {
             if (ex != null)
                 _log.Error(message, ex);
