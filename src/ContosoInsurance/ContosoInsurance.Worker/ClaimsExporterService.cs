@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ContosoInsurance.Data;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,17 +16,16 @@ namespace ContosoInsurance.Worker
     {
         private readonly ILogger<ClaimsExporterService> _logger;
         private readonly ExportOptions _options;
-        private readonly string _connectionString;
+        private readonly IServiceScopeFactory _scopeFactory;
 
         public ClaimsExporterService(
             ILogger<ClaimsExporterService> logger,
             IOptions<ExportOptions> options,
-            IConfiguration configuration)
+            IServiceScopeFactory scopeFactory)
         {
             _logger = logger;
             _options = options.Value;
-            _connectionString = configuration.GetConnectionString("ContosoDb")
-                ?? throw new InvalidOperationException("Connection string 'ContosoDb' is not configured.");
+            _scopeFactory = scopeFactory;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -55,7 +54,7 @@ namespace ContosoInsurance.Worker
         {
             try
             {
-                await Task.Run(() => Export(), cancellationToken);
+                await ExportAsync(cancellationToken);
             }
             catch (Exception ex)
             {
@@ -63,14 +62,15 @@ namespace ContosoInsurance.Worker
             }
         }
 
-        private void Export()
+        private async Task ExportAsync(CancellationToken cancellationToken)
         {
             var root = _options.ExportRoot;
             Directory.CreateDirectory(root);
             var file = Path.Combine(root, "claims-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + ".csv");
 
-            var repo = new ClaimsRepository(_connectionString);
-            var claims = repo.GetRecent(1000);
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var repo = scope.ServiceProvider.GetRequiredService<ClaimsRepository>();
+            var claims = await repo.GetRecentAsync(1000, cancellationToken);
 
             var sb = new StringBuilder();
             sb.AppendLine("ClaimId,PolicyNumber,ClaimantName,Amount,Status,FiledOn,Score");
@@ -86,7 +86,7 @@ namespace ContosoInsurance.Worker
                     c.Score?.ToString(CultureInfo.InvariantCulture) ?? ""));
             }
 
-            File.WriteAllText(file, sb.ToString(), Encoding.UTF8);
+            await File.WriteAllTextAsync(file, sb.ToString(), Encoding.UTF8, cancellationToken);
             _logger.LogInformation("Wrote export {File} ({Count} rows)", file, claims.Count);
         }
 

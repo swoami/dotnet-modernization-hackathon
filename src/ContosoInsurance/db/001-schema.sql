@@ -11,7 +11,6 @@ BEGIN
         UserId       INT IDENTITY(1,1) PRIMARY KEY,
         Username     NVARCHAR(64)  NOT NULL UNIQUE,
         PasswordHash NVARCHAR(128) NOT NULL,
-        Salt         NVARCHAR(64)  NOT NULL,
         Role         NVARCHAR(32)  NOT NULL DEFAULT 'Agent'
     );
 END
