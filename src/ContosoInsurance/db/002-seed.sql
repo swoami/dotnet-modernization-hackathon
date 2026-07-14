@@ -1,17 +1,45 @@
 USE ContosoInsurance;
 GO
 
--- Users (placeholder SHA1-style PasswordHash values — deliberately weak scheme.
--- These are NOT real hashes of any known password; the login flow will fail as-is.
--- If you want to actually sign in locally, replace the hash column with
--- LOWER(CONVERT(NVARCHAR(40), HASHBYTES('SHA1', N'Password1' + Salt), 2)) for each row.
--- The SHA1 + per-user-salt scheme itself is the anti-pattern for appmod to flag.)
-IF NOT EXISTS (SELECT 1 FROM dbo.Users WHERE Username = 'agent1')
+-- Development accounts use Password1. Values are ASP.NET Core Identity PBKDF2 hashes.
+DECLARE @DemoUsers TABLE
+(
+    Username NVARCHAR(64) NOT NULL PRIMARY KEY,
+    PasswordHash NVARCHAR(128) NOT NULL,
+    Role NVARCHAR(32) NOT NULL
+);
+
+INSERT INTO @DemoUsers (Username, PasswordHash, Role) VALUES
+    (N'agent1', N'AQAAAAIAAYagAAAAEPzmJ4R+71ks71AOqvfd2tkoX3aGagDuIn8aeZJ6ZXsaH6TFpltZPXTGOj/FJhzCeA==', N'Agent'),
+    (N'adjuster', N'AQAAAAIAAYagAAAAELKFMXNLmZgdGEjGZwBgAouCOcooNfzKn/ui4WEnIW3kaXct/aCPHsV83pDQN42bbQ==', N'Adjuster'),
+    (N'admin', N'AQAAAAIAAYagAAAAEIfQzvaULCgTnRMpieA8XZkjqMaXEnizE7XhwCYp7sqsm7NLERP6cTWX+215/iJ8fA==', N'Admin');
+
+UPDATE users
+SET
+    PasswordHash = demo.PasswordHash,
+    Role = demo.Role
+FROM dbo.Users AS users
+INNER JOIN @DemoUsers AS demo ON demo.Username = users.Username;
+
+IF COL_LENGTH('dbo.Users', 'Salt') IS NULL
 BEGIN
-    INSERT INTO dbo.Users (Username, PasswordHash, Salt, Role) VALUES
-        (N'agent1',   N'7c222fb2927d828af22f592134e8932480637c0d', N'salt-agent1',   N'Agent'),
-        (N'adjuster', N'6c85b0e3b7be5b6b8d7be2b6d1c1a2f3e4d5c6b7', N'salt-adj',      N'Adjuster'),
-        (N'admin',    N'2fd4e1c67a2d28fced849ee1bb76e7391b93eb12', N'salt-admin',   N'Admin');
+    INSERT INTO dbo.Users (Username, PasswordHash, Role)
+    SELECT demo.Username, demo.PasswordHash, demo.Role
+    FROM @DemoUsers AS demo
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM dbo.Users AS users
+        WHERE users.Username = demo.Username);
+END
+ELSE
+BEGIN
+    INSERT INTO dbo.Users (Username, PasswordHash, Salt, Role)
+    SELECT demo.Username, demo.PasswordHash, N'', demo.Role
+    FROM @DemoUsers AS demo
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM dbo.Users AS users
+        WHERE users.Username = demo.Username);
 END
 GO
 

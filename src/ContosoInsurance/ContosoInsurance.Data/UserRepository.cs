@@ -1,21 +1,23 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using ContosoInsurance.Data.Models;
-using ContosoInsurance.Data.Security;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace ContosoInsurance.Data;
 
-/// <summary>
-/// Legacy password verification is retained until its dedicated modernization task completes.
-/// </summary>
 public class UserRepository
 {
     private readonly ContosoDbContext _dbContext;
+    private readonly IPasswordHasher<User> _passwordHasher;
 
-    public UserRepository(ContosoDbContext dbContext)
+    public UserRepository(
+        ContosoDbContext dbContext,
+        IPasswordHasher<User> passwordHasher)
     {
-        _dbContext = dbContext;
+        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
     }
 
     public User? FindByUsername(string username) =>
@@ -28,6 +30,15 @@ public class UserRepository
             .AsNoTracking()
             .SingleOrDefaultAsync(user => user.Username == username, cancellationToken);
 
-    public bool VerifyPassword(User user, string password) =>
-        LegacyPasswordVerifier.Verify(user, password);
+    public PasswordVerificationResult VerifyPassword(User? user, string? password)
+    {
+        if (user is null ||
+            string.IsNullOrWhiteSpace(user.PasswordHash) ||
+            password is null)
+        {
+            return PasswordVerificationResult.Failed;
+        }
+
+        return _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+    }
 }

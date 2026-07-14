@@ -75,9 +75,6 @@ public class ContosoDbContext : DbContext
             entity.Property(user => user.PasswordHash)
                 .HasMaxLength(128)
                 .IsRequired();
-            entity.Property(user => user.Salt)
-                .HasMaxLength(64)
-                .IsRequired();
             entity.Property(user => user.Role)
                 .HasMaxLength(32)
                 .HasDefaultValue("Agent")

@@ -1,13 +1,14 @@
 using System.Security.Claims;
 using ContosoInsurance.Data;
-using ContosoInsurance.Data.Security;
 using ContosoInsurance.Common.Logging;
 using ContosoInsurance.Web.Components;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using User = ContosoInsurance.Data.Models.User;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,7 @@ builder.Services.AddAntiforgery();
 
 builder.Services.AddDbContextFactory<ContosoDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ContosoDb")));
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 var scoringEndpoint = builder.Configuration["AppSettings:ClaimScoringEndpoint"] ?? "http://localhost:8080";
 builder.Services.AddHttpClient("scoring", client =>
@@ -63,24 +65,38 @@ app.MapStaticAssets().AllowAnonymous();
 app.MapPost("/auth/login", async Task<IResult> (
         HttpContext httpContext,
         IDbContextFactory<ContosoDbContext> dbFactory,
+        IPasswordHasher<User> passwordHasher,
         ILogger<Program> logger,
-        IAntiforgery antiforgery) =>
+        IAntiforgery antiforgery,
+        CancellationToken cancellationToken) =>
     {
         await antiforgery.ValidateRequestAsync(httpContext);
 
-        var form = await httpContext.Request.ReadFormAsync();
+        var form = await httpContext.Request.ReadFormAsync(cancellationToken);
         var username = form["username"].ToString().Trim();
         var password = form["password"].ToString();
         var returnUrl = form["returnUrl"].ToString();
 
-        await using var db = await dbFactory.CreateDbContextAsync();
-        var user = await db.Users.AsNoTracking()
-            .SingleOrDefaultAsync(candidate => candidate.Username == username);
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        var user = await db.Users
+            .SingleOrDefaultAsync(candidate => candidate.Username == username, cancellationToken);
 
-        if (user == null || !LegacyPasswordVerifier.Verify(user, password))
+        var verificationResult = PasswordVerificationResult.Failed;
+        if (user is not null && !string.IsNullOrWhiteSpace(user.PasswordHash))
+        {
+            verificationResult = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+        }
+
+        if (user is null || verificationResult == PasswordVerificationResult.Failed)
         {
             logger.LogWarning("Failed login for {Username}", username);
             return Results.Redirect(BuildLoginErrorUrl(returnUrl));
+        }
+
+        if (verificationResult == PasswordVerificationResult.SuccessRehashNeeded)
+        {
+            user.PasswordHash = passwordHasher.HashPassword(user, password);
+            await db.SaveChangesAsync(cancellationToken);
         }
 
         var claims = new List<Claim>
