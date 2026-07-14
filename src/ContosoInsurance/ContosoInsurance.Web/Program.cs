@@ -52,6 +52,19 @@ var app = builder.Build();
 app.Logger.LogInformation("ContosoInsurance.Web starting");
 app.Lifetime.ApplicationStopping.Register(() => app.Logger.LogInformation("ContosoInsurance.Web stopping"));
 
+if (app.Configuration.GetValue("Database:AutoMigrate", true))
+{
+    using var scope = app.Services.CreateScope();
+    var dbFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<ContosoDbContext>>();
+    await using var db = await dbFactory.CreateDbContextAsync();
+    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
+    await DbInitializer.InitializeAsync(
+        db,
+        passwordHasher,
+        app.Logger,
+        seedSampleData: app.Configuration.GetValue("Database:SeedSampleData", true));
+}
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/error", createScopeForErrors: true);

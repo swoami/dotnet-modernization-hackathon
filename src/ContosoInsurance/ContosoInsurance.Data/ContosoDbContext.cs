@@ -12,6 +12,7 @@ public class ContosoDbContext : DbContext
     public DbSet<Claim> Claims { get; set; }
     public DbSet<Policy> Policies { get; set; }
     public DbSet<User> Users { get; set; }
+    public DbSet<ExportLog> ExportLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,6 +39,10 @@ public class ContosoDbContext : DbContext
             entity.Property(claim => claim.FiledOn)
                 .HasDefaultValueSql("SYSUTCDATETIME()");
 
+            entity.HasIndex(claim => claim.FiledOn)
+                .IsDescending()
+                .HasDatabaseName("IX_Claims_FiledOn");
+
             entity.Ignore(claim => claim.PolicyNumber);
 
             entity.HasOne(claim => claim.Policy)
@@ -54,6 +59,8 @@ public class ContosoDbContext : DbContext
             entity.Property(policy => policy.PolicyNumber)
                 .HasMaxLength(32)
                 .IsRequired();
+            entity.HasIndex(policy => policy.PolicyNumber)
+                .IsUnique();
             entity.Property(policy => policy.HolderName)
                 .HasMaxLength(128)
                 .IsRequired();
@@ -72,6 +79,8 @@ public class ContosoDbContext : DbContext
             entity.Property(user => user.Username)
                 .HasMaxLength(64)
                 .IsRequired();
+            entity.HasIndex(user => user.Username)
+                .IsUnique();
             entity.Property(user => user.PasswordHash)
                 .HasMaxLength(128)
                 .IsRequired();
@@ -79,6 +88,20 @@ public class ContosoDbContext : DbContext
                 .HasMaxLength(32)
                 .HasDefaultValue("Agent")
                 .IsRequired();
+        });
+
+        modelBuilder.Entity<ExportLog>(entity =>
+        {
+            entity.ToTable("ExportLog", "dbo");
+            entity.HasKey(log => log.ExportId);
+
+            entity.Property(log => log.ExportedAt)
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(log => log.FilePath)
+                .HasMaxLength(512)
+                .IsRequired();
+            entity.Property(log => log.RowCount)
+                .HasColumnName("RowCount");
         });
     }
 }
