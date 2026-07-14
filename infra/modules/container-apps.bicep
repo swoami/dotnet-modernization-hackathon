@@ -68,7 +68,8 @@ var secrets = [
 resource web 'Microsoft.App/containerApps@2024-03-01' = {
   name: 'contosoinsurance-web'
   location: location
-  tags: tags
+  // azd matches Container Apps to azure.yaml services by this tag, not by resource name.
+  tags: union(tags, { 'azd-service-name': 'contosoinsurance-web' })
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: userAssignedIdentity
@@ -108,7 +109,7 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
 resource services 'Microsoft.App/containerApps@2024-03-01' = if (deployServicesApp) {
   name: 'contosoinsurance-services'
   location: location
-  tags: tags
+  tags: union(tags, { 'azd-service-name': 'contosoinsurance-services' })
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: userAssignedIdentity
@@ -149,7 +150,7 @@ resource services 'Microsoft.App/containerApps@2024-03-01' = if (deployServicesA
 resource worker 'Microsoft.App/containerApps@2024-03-01' = {
   name: 'contosoinsurance-worker'
   location: location
-  tags: tags
+  tags: union(tags, { 'azd-service-name': 'contosoinsurance-worker' })
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: userAssignedIdentity
