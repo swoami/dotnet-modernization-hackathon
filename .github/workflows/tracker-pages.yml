@@ -1,12 +1,21 @@
 name: Progress Tracker (GitHub Pages)
 
 on:
-  # Only main pushes trigger the tracker rebuild+deploy: the scan step itself
-  # reads every track/* branch fresh via `git fetch` below, and the `deploy`
-  # job's `github-pages` environment only allows deploys from `main` anyway,
-  # so triggering on track/* pushes just produced noisy failed runs there.
+  # Rebuild the tracker on every branch that feeds it, so the live page stays
+  # current without waiting on a manual workflow_dispatch: main (checkpoints/
+  # merges) as well as the three track branches and integration (day-of
+  # progress). The scan step itself reads every track/* branch fresh via
+  # `git fetch` below regardless of which branch triggered the run.
+  #
+  # Only `main` is allowed to actually *deploy* to `github-pages` (see the
+  # `deploy` job's `if:` below) — that environment's branch-restriction only
+  # permits deploys from `main`, so a push to track/*/integration reruns the
+  # `build` job (fresh artifact, harmless) but the `deploy` job is skipped
+  # rather than hard-failing. Previously this was solved by only triggering
+  # on `main`, but that silently stopped the tracker from reflecting track
+  # branch progress between merges — see docs/learnings.md.
   push:
-    branches: [main]
+    branches: [main, 'track/**', integration]
   workflow_dispatch:
 
 permissions:
@@ -42,6 +51,11 @@ jobs:
 
   deploy:
     needs: build
+    # Guard against the `github-pages` environment's branch-restricted deploys:
+    # it only permits deployments from `main`, so a workflow_dispatch or push
+    # on any other branch would otherwise hard-fail this job (red X) even
+    # though the `build` job above succeeded. Skip it gracefully instead.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
