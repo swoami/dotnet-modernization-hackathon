@@ -37,6 +37,12 @@ var commonEnv = [
     value: storageAccountName
   }
   {
+    // Consumed by ContosoInsurance.Common.Storage.ClaimDocumentStoreExtensions.AddClaimDocumentStore
+    // (Web and Worker) to build the BlobServiceClient via Managed Identity.
+    name: 'AzureStorage__AccountUri'
+    value: 'https://${storageAccountName}.blob.core.windows.net'
+  }
+  {
     name: 'AZURE_CLIENT_ID'
     value: userAssignedIdentityClientId
   }
@@ -45,6 +51,10 @@ var commonEnv = [
     value: keyVaultUri
   }
 ]
+
+// Web calls the Services app's claim-scoring endpoint over the Container Apps
+// environment's internal DNS. Falls back to localhost only when Services isn't deployed.
+var scoringEndpoint = deployServicesApp ? 'https://${services.?properties.?configuration.?ingress.?fqdn}' : 'http://localhost:8080'
 
 var userAssignedIdentity = {
   '${userAssignedIdentityId}': {}
@@ -91,7 +101,12 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
         {
           name: 'web'
           image: imageWeb
-          env: commonEnv
+          env: concat(commonEnv, [
+            {
+              name: 'AppSettings__ClaimScoringEndpoint'
+              value: scoringEndpoint
+            }
+          ])
           resources: {
             cpu: json('0.25')
             memory: '0.5Gi'
