@@ -28,3 +28,10 @@ appsettings.Development.json
 appsettings.Local.json
 *.pfx
 *.key
+
+# BMad method tooling & generated artifacts (local only)
+_bmad/
+_bmad-output/
+.agents/
+.claude/
+.github/agents/
