@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Tasks template for modernization plan. Generate this file alongside plan.md to track individual migration tasks.",
+  "tasks": [
+    {
+      "type": "transform",
+      "id": "001-add-azure-sdk-packages",
+      "status": "pending",
+      "summary": "",
+      "description": "Add Azure.Storage.Blobs and Azure.Identity NuGet packages to ContosoInsurance.Worker.csproj and ContosoInsurance.Common.csproj. These packages provide BlobServiceClient, BlobContainerClient, and DefaultAzureCredential required for Managed Identity-based blob access.",
+      "reason": "The worker currently writes CSV exports to local disk via File.WriteAllText. Azure Blob Storage with DefaultAzureCredential replaces the file-system dependency, enabling cloud-native, credential-free storage. Both the Worker (Track B) and Web (Track A) share the same Blob SDK via Common.",
+      "requirements": "1. Add Azure.Storage.Blobs (latest stable, no known CVEs) to ContosoInsurance.Worker.csproj. 2. Add Azure.Identity (latest stable, no known CVEs) to ContosoInsurance.Common.csproj and ContosoInsurance.Worker.csproj. 3. Do NOT add any storage account connection strings or keys — Managed Identity (DefaultAzureCredential) is the only accepted authentication path. 4. Verify dotnet build passes after adding packages.",
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "002-introduce-iclaimdocumentstore",
+      "status": "pending",
+      "summary": "",
+      "description": "Create the IClaimDocumentStore abstraction in ContosoInsurance.Common with a BlobClaimDocumentStore production implementation (BlobServiceClient + DefaultAzureCredential) and an InMemoryClaimDocumentStore fake for unit tests. Provide an AddClaimDocumentStore(IConfiguration) DI extension method.",
+      "reason": "Both the Worker (CSV export to claim-exports) and the Web upload path (claim-docs) perform blob writes. Extracting a shared interface in Common avoids duplication, enables testability via the in-memory fake, and enforces the no-connection-string policy in one place.",
+      "requirements": "1. Create IClaimDocumentStore interface with UploadAsync(string containerName, string blobName, Stream content, CancellationToken ct) method in ContosoInsurance.Common/Storage/. 2. Implement BlobClaimDocumentStore using BlobServiceClient(Uri, DefaultAzureCredential). Create the container if it does not exist (CreateIfNotExistsAsync). 3. Implement InMemoryClaimDocumentStore storing uploads in a Dictionary<string, byte[]> keyed by containerName/blobName for use in unit tests. 4. Create AddClaimDocumentStore(IConfiguration) extension method on IServiceCollection that registers BlobClaimDocumentStore as IClaimDocumentStore singleton. Read the storage account URI from configuration key 'AzureStorage:AccountUri'. 5. Build passes; no connection strings anywhere in the implementation.",
+      "dependencies": [
+        "001-add-azure-sdk-packages"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "true",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "003-replace-file-write-with-blob-upload",
+      "status": "pending",
+      "summary": "",
+      "description": "Update ExportOptions with ContainerName property (default 'claim-exports'). Inject IClaimDocumentStore into ClaimsExporterService and replace Directory.CreateDirectory + File.WriteAllText with IClaimDocumentStore.UploadAsync. Preserve all existing export logic (column selection, Csv() helper, row count logging) verbatim.",
+      "reason": "File.WriteAllText writes to C:\\Exports — a hard-coded Windows local path that fails in Linux containers and violates the no-local-paths requirement. Azure Blob Storage provides durable, replicated, cloud-native storage with zero infrastructure overhead.",
+      "requirements": "1. Add ContainerName property to ExportOptions (default value 'claim-exports'). 2. Remove ExportRoot property or retain it only as a local-dev override — the blob path is the primary write target. 3. Inject IClaimDocumentStore via constructor into ClaimsExporterService. 4. Replace the Export() synchronous method with ExportAsync(CancellationToken) that: a) builds the CSV in a MemoryStream, b) calls await _store.UploadAsync(_options.ContainerName, blobName, stream, ct), c) logs row count and blob name on success. 5. No File.WriteAllText, Directory.CreateDirectory, or Path.Combine remaining in the export path. 6. ExportSafelyAsync passes cancellation token through.",
+      "dependencies": [
+        "001-add-azure-sdk-packages",
+        "002-introduce-iclaimdocumentstore"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "true",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "004-add-exportlog-entity-and-audit",
+      "status": "pending",
+      "summary": "",
+      "description": "Add ExportLog entity to ContosoInsurance.Data.Models with Id, BlobName, RowCount, ExportedAtUtc columns. Add DbSet<ExportLog> to ContosoDbContext. Generate EF Core migration. Persist an ExportLog row after each successful blob upload in ClaimsExporterService using IServiceScopeFactory.",
+      "reason": "An audit trail of every export run (what blob was created, how many rows, when) is required for compliance and debugging. Track B owns ExportLog; Track A owns Claims/Policy/User in DbContext — no conflicts.",
+      "requirements": "1. Create ContosoInsurance.Data/Models/ExportLog.cs with: int Id (PK identity), string BlobName (nvarchar 512, required), int RowCount, DateTime ExportedAtUtc (default SYSUTCDATETIME()). 2. Add public DbSet<ExportLog> ExportLogs to ContosoDbContext. 3. Configure the entity in OnModelCreating: table 'ExportLogs' in 'dbo' schema, HasMaxLength(512) on BlobName, HasDefaultValueSql(\"SYSUTCDATETIME()\") on ExportedAtUtc. 4. Add EF Core migration: dotnet ef migrations add AddExportLog -p ContosoInsurance.Data -s ContosoInsurance.Worker. 5. In ClaimsExporterService.ExportAsync, after successful UploadAsync, create a scope via IServiceScopeFactory, resolve ContosoDbContext, add and save ExportLog row. 6. Register ContosoDbContext with AddDbContext<ContosoDbContext> in Program.cs (connection string from IConfiguration, Managed Identity auth).",
+      "dependencies": [
+        "003-replace-file-write-with-blob-upload"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "005-add-application-insights-worker",
+      "status": "pending",
+      "summary": "",
+      "description": "Add Microsoft.ApplicationInsights.WorkerService NuGet package to ContosoInsurance.Worker.csproj. Call builder.Services.AddApplicationInsightsTelemetryWorkerService() in Program.cs. Read ApplicationInsights:ConnectionString from configuration — no hard-coded instrumentation key.",
+      "reason": "The worker runs as a background daemon with no HTTP traffic. AddApplicationInsightsTelemetryWorkerService() enables dependency tracking, custom telemetry, and live metrics without the web SDK overhead. The connection string is obtained at runtime from environment variables or Key Vault — never committed to source.",
+      "requirements": "1. Add Microsoft.ApplicationInsights.WorkerService (latest stable) to ContosoInsurance.Worker.csproj. 2. In Program.cs, call builder.Services.AddApplicationInsightsTelemetryWorkerService(options => { options.ConnectionString = builder.Configuration[\"ApplicationInsights:ConnectionString\"]; }); 3. Add 'ApplicationInsights': { 'ConnectionString': '' } placeholder section to appsettings.json (empty value — populated via environment at runtime). 4. Do NOT hard-code any instrumentation key or connection string value in source files. 5. Build passes.",
+      "dependencies": [
+        "003-replace-file-write-with-blob-upload"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "006-add-health-checks",
+      "status": "pending",
+      "summary": "",
+      "description": "Add health checks to the worker: a BlobContainerHealthCheck that calls BlobContainerClient.ExistsAsync() on the claim-exports container, and an EF Core database health check via AddDbContextCheck<ContosoDbContext>(). Expose results via console logging or a minimal HTTP endpoint tagged 'ready'.",
+      "reason": "Container Apps readiness probes and AKS liveness probes require a health endpoint. Two checks cover the two external dependencies: Azure Blob Storage availability and SQL Server connectivity. Both checks are tagged 'ready' so orchestrators can use them for traffic routing decisions.",
+      "requirements": "1. Add Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore to ContosoInsurance.Worker.csproj. 2. Create ContosoInsurance.Worker/HealthChecks/BlobContainerHealthCheck.cs implementing IHealthCheck: inject BlobServiceClient (or IClaimDocumentStore), call GetBlobContainerClient(_options.ContainerName).ExistsAsync(ct), return Healthy/Unhealthy accordingly. 3. In Program.cs: builder.Services.AddHealthChecks().AddDbContextCheck<ContosoDbContext>(tags: new[] { \"ready\" }).AddCheck<BlobContainerHealthCheck>(\"blob-storage\", tags: new[] { \"ready\" }); 4. Optionally expose /healthz via a background HTTP listener or use Microsoft.AspNetCore.Diagnostics.HealthChecks if an HTTP port is added. If no HTTP port, log health status on each PeriodicTimer tick as an alternative. 5. Build passes.",
+      "dependencies": [
+        "004-add-exportlog-entity-and-audit",
+        "005-add-application-insights-worker"
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "true",
+        "passUnitTests": "true"
+      }
+    }
+  ],
+  "metadata": {
+    "planName": "modernization-plan3",
+    "projectName": "ContosoInsurance.Worker",
+    "language": "dotnet",
+    "createdAt": "2026-07-14T12:11:00.000+00:00",
+    "version": "1.0"
+  }
+}
