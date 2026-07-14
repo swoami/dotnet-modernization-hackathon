@@ -1,10 +1,37 @@
 # Copilot instructions — Legacy Breakers modernization hackathon
 
 Context for any Copilot session (chat, agent, or CLI) working in this repo.
-This is `ContosoInsurance`: a .NET Framework 4.6.1 solution (WebForms + WCF +
-Windows Service + ADO.NET + SQL Server) being modernized to .NET 9 + Azure
-Container Apps by three parallel tracks. Full background: `docs/pre-read.md`,
-`docs/task-briefs.md`, `docs/facilitator-guide.md`, `docs/rubric.md`.
+This is `ContosoInsurance`: a real legacy .NET Framework 4.6.1 solution
+(WebForms + WCF + Windows Service + ADO.NET + SQL Server) being modernized to
+a **.NET 9 + Azure Container Apps** stack in one day by three parallel tracks,
+using the GitHub Copilot app modernization tooling, the Modernization CLI
+(`appcat` / `dotnet-appmod`), `azd`, and regular Copilot Chat/Agent mode. Full
+background: `docs/pre-read.md`, `docs/task-briefs.md`,
+`docs/facilitator-guide.md`, `docs/rubric.md`.
+
+The legacy app does **not** need to build locally to be assessed — the
+modernization tools work from source. Nothing in this repo should require
+Visual Studio, SQL Server, or IIS to be installed locally.
+
+## The two extensions, chained in order
+
+Two separate installs make up "GitHub Copilot app modernization for .NET":
+
+1. **Upgrade for .NET** — .NET Fx → .NET (n). Handles project file conversion,
+   NuGet migration, API surface changes, `Web.config` → `appsettings.json`,
+   WebForms/WCF transformations.
+2. **Azure migration for .NET** — code- and infra-level cloud readiness:
+   Managed Identity, Key Vault, Blob Storage, App Insights, containerization,
+   Bicep generation, GitHub Actions.
+
+Always run **Upgrade first, then Azure migration** — don't reach for
+Azure-migration changes (Managed Identity, Blob, containerization, Bicep)
+before the corresponding upgrade task has landed.
+
+Each extension's core loop: **Assess** (scan the solution, produce a grouped
+findings/plan: framework upgrade, package/CVE issues, config, data, hosting,
+cloud readiness) then **Apply** (execute one task at a time — read the plan,
+propose a diff, open it for review, move to the next task).
 
 ## Commit discipline (read this first)
 
@@ -40,11 +67,30 @@ Container Apps by three parallel tracks. Full background: `docs/pre-read.md`,
    on active-editor pickup, especially when re-issuing a prompt after a wrong
    answer.
 
-Chain the two extension flavors in order: **Upgrade first, then Azure
-migration** (containerization, Managed Identity, Key Vault, Blob, App
-Insights, Bicep).
+## Ground rules
+
+- **Copilot-first.** Use the modernization extension for anything it
+  supports. Fall back to Copilot Chat / Agent mode for freeform code changes.
+  Hand-editing is a last resort — and note it in `docs/learnings.md`.
+- **Diffs are reviewed.** Every agent-generated diff gets a real look before
+  accept. If Copilot produces something wrong, capture the prompt + output in
+  `docs/learnings.md`.
+- **Small commits.** One task = one commit ideally. Push often to the
+  feature branch.
+- **Sync at every checkpoint.** Rebase / merge `main` at the times listed on
+  the agenda — don't let a track drift for hours without syncing.
+- **Ask before rewriting.** Don't rewrite another track's project without
+  confirming with the pair that owns it.
+- **Time-box.** Stretch goals (WebForms → Blazor, WCF → CoreWCF, Entra ID
+  auth) only after the core "done" checklist for the track is green.
 
 ## Branch & ownership rules
+
+| Track | Pair | Owns (folders) |
+| --- | --- | --- |
+| **A — Web + API tier** | 2 people | `ContosoInsurance.Web/`, `ContosoInsurance.Services/`, `ContosoInsurance.Data/` (jointly with B) |
+| **B — Worker + Storage** | 2 people | `ContosoInsurance.Worker/`, Blob wiring, `ContosoInsurance.Data/` (shared) |
+| **C — Platform** | 2 people | Containerization, Bicep, `azd`, Managed Identity, Key Vault, App Insights, GitHub Actions |
 
 - Tracks work on `track/a-web-api`, `track/b-worker-storage`,
   `track/c-platform`. Rebase against `main` at each checkpoint; never rebase
