@@ -1,0 +1,48 @@
+name: CodeQL Security Scan
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/ContosoInsurance/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/ContosoInsurance/**'
+  schedule:
+    # Run weekly on Monday at 08:00 UTC to catch new CVEs even without code changes.
+    - cron: '0 8 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: CodeQL Analysis (csharp)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+          # Use the default security-and-quality query suite.
+          queries: security-and-quality
+
+      - name: Build solution
+        working-directory: src/ContosoInsurance
+        run: dotnet build ContosoInsurance.sln --configuration Release
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:csharp
