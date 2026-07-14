@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using ContosoInsurance.Data;
 using ContosoInsurance.Data.Security;
+using ContosoInsurance.Common.Logging;
 using ContosoInsurance.Web.Components;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
@@ -9,6 +10,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddApplicationInsightsTelemetry();
+builder.Logging.AddContosoLogging(builder.Configuration);
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -59,12 +63,11 @@ app.MapStaticAssets().AllowAnonymous();
 app.MapPost("/auth/login", async Task<IResult> (
         HttpContext httpContext,
         IDbContextFactory<ContosoDbContext> dbFactory,
-        ILoggerFactory loggerFactory,
+        ILogger<Program> logger,
         IAntiforgery antiforgery) =>
     {
         await antiforgery.ValidateRequestAsync(httpContext);
 
-        var logger = loggerFactory.CreateLogger("ContosoInsurance.Web.Auth");
         var form = await httpContext.Request.ReadFormAsync();
         var username = form["username"].ToString().Trim();
         var password = form["password"].ToString();
@@ -98,6 +101,32 @@ app.MapPost("/auth/login", async Task<IResult> (
 
         logger.LogInformation("Signed in {Username}", user.Username);
         return Results.Redirect(GetLocalReturnUrl(returnUrl));
+    })
+    .AllowAnonymous();
+
+app.MapGet("/health", async Task<IResult> (
+        IDbContextFactory<ContosoDbContext> dbFactory,
+        ILogger<Program> logger,
+        CancellationToken cancellationToken) =>
+    {
+        try
+        {
+            await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+            if (await db.Database.CanConnectAsync(cancellationToken))
+            {
+                return Results.Ok(new { status = "Healthy" });
+            }
+
+            logger.LogWarning("Database connectivity health check failed.");
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Database connectivity health check failed.");
+        }
+
+        return Results.Json(
+            new { status = "Unhealthy" },
+            statusCode: StatusCodes.Status503ServiceUnavailable);
     })
     .AllowAnonymous();
 
@@ -145,4 +174,3 @@ static string GetLocalReturnUrl(string? returnUrl)
 
     return returnUrl;
 }
-
