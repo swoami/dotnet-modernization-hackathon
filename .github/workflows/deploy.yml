@@ -103,6 +103,11 @@ jobs:
           azd env set AZURE_SUBSCRIPTION_ID "$AZURE_SUBSCRIPTION_ID"
 
       # Keep first-time infrastructure creation manual so regular main pushes only redeploy the app.
+      # `azd provision` validates at subscription scope even for a resourceGroup-scoped template
+      # (a known azd behavior), which this hackathon SP/user only have RG-scoped permissions for.
+      # Deploy directly with `az deployment group create` (RG-scope only, matches our actual
+      # permissions) and bridge its outputs into the azd environment so `azd deploy` below can
+      # still find the registry/app names it needs.
       - name: Provision Azure infrastructure
         if: ${{ steps.azure-config.outputs.configured == 'true' && github.event_name == 'workflow_dispatch' && github.event.inputs.provision == 'true' }}
         working-directory: src/ContosoInsurance
@@ -114,7 +119,23 @@ jobs:
           AZURE_LOCATION: ${{ env.AZURE_LOCATION }}
           AZURE_RESOURCE_GROUP: ${{ env.AZURE_RESOURCE_GROUP }}
           AZD_AUTH_TYPE: ${{ env.AZD_AUTH_TYPE }}
-        run: azd provision --no-prompt
+        run: |
+          set -euo pipefail
+          DEPLOYMENT_NAME="azd-${AZURE_ENV_NAME}"
+          az deployment group create \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$DEPLOYMENT_NAME" \
+            --template-file ../../infra/main.bicep \
+            --parameters ../../infra/main.bicepparam
+
+          az deployment group show \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$DEPLOYMENT_NAME" \
+            --query properties.outputs -o json \
+          | jq -r 'to_entries[] | "\(.key)=\(.value.value)"' \
+          | while IFS='=' read -r key value; do
+              azd env set "$key" "$value"
+            done
 
       - name: Deploy application
         if: steps.azure-config.outputs.configured == 'true'
