@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using Azure.Identity;
+using Azure.Storage.Blobs;
 using ContosoInsurance.Data;
 using ContosoInsurance.Common.Logging;
 using ContosoInsurance.Common.Storage;
@@ -18,9 +20,20 @@ builder.Services.AddApplicationInsightsTelemetry();
 builder.Logging.AddContosoLogging(builder.Configuration);
 
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents(options =>
+    {
+        options.DetailedErrors = builder.Environment.IsDevelopment();
+    });
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAntiforgery();
+
+var storageAccountName = builder.Configuration["AZURE_STORAGE_ACCOUNT_NAME"];
+if (!string.IsNullOrWhiteSpace(storageAccountName))
+{
+    builder.Services.AddSingleton(new BlobServiceClient(
+        new Uri($"https://{storageAccountName}.blob.core.windows.net"),
+        new DefaultAzureCredential()));
+}
 
 builder.Services.AddDbContextFactory<ContosoDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ContosoDb")));
