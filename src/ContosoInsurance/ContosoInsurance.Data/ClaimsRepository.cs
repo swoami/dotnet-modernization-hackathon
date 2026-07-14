@@ -1,141 +1,122 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
-using Microsoft.Data.SqlClient;
-using ContosoInsurance.Common.Config;
-using ContosoInsurance.Common.Logging;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using ContosoInsurance.Data.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
-namespace ContosoInsurance.Data
+namespace ContosoInsurance.Data;
+
+public class ClaimsRepository
 {
-    /// <summary>
-    /// Raw ADO.NET data access. No async. Some methods use parameterized SQL,
-    /// one uses string concatenation on purpose (see <see cref="SearchByClaimant"/>)
-    /// so the appmod flow can flag it as SQL injection.
-    /// </summary>
-    public class ClaimsRepository
+    private readonly ContosoDbContext _dbContext;
+    private readonly ILogger<ClaimsRepository> _logger;
+
+    public ClaimsRepository(
+        ContosoDbContext dbContext,
+        ILogger<ClaimsRepository> logger)
     {
-        private const string ClaimColumns =
-            "c.ClaimId, c.PolicyId, p.PolicyNumber, c.ClaimantName, c.Amount, c.Status, " +
-            "c.FiledOn, c.ClosedOn, c.DocumentPath, c.Score, c.Notes";
-
-        private const string ClaimsFrom =
-            "FROM dbo.Claims c JOIN dbo.Policies p ON p.PolicyId = c.PolicyId";
-
-        private readonly string _connectionString;
-
-        public ClaimsRepository() : this(ConfigHelper.GetConnectionString("ContosoDb")) { }
-
-        public ClaimsRepository(string connectionString)
-        {
-            _connectionString = connectionString;
-        }
-
-        public List<Claim> GetRecent(int top = 50)
-        {
-            var results = new List<Claim>();
-            const string sql = "SELECT TOP (@Top) " + ClaimColumns + " " + ClaimsFrom +
-                               " ORDER BY c.FiledOn DESC";
-            using (var conn = new SqlConnection(_connectionString))
-            using (var cmd = new SqlCommand(sql, conn))
-            {
-                cmd.Parameters.AddWithValue("@Top", top);
-                conn.Open();
-                using (var r = cmd.ExecuteReader())
-                {
-                    while (r.Read()) results.Add(Map(r));
-                }
-            }
-            return results;
-        }
-
-        public Claim? GetById(int claimId)
-        {
-            const string sql = "SELECT " + ClaimColumns + " " + ClaimsFrom +
-                               " WHERE c.ClaimId = @Id";
-            using (var conn = new SqlConnection(_connectionString))
-            using (var cmd = new SqlCommand(sql, conn))
-            {
-                cmd.Parameters.AddWithValue("@Id", claimId);
-                conn.Open();
-                using (var r = cmd.ExecuteReader(CommandBehavior.SingleRow))
-                {
-                    return r.Read() ? Map(r) : null;
-                }
-            }
-        }
-
-        /// <summary>
-        /// LEGACY: concatenated SQL — vulnerable to injection.
-        /// Kept intentionally so Copilot / appmod can flag and fix it.
-        /// </summary>
-        public List<Claim> SearchByClaimant(string namePart)
-        {
-            var results = new List<Claim>();
-            var sql = "SELECT " + ClaimColumns + " " + ClaimsFrom +
-                      " WHERE c.ClaimantName LIKE '%" + namePart + "%'"; // <-- BAD: user input concatenated into SQL
-            using (var conn = new SqlConnection(_connectionString))
-            using (var cmd = new SqlCommand(sql, conn))
-            {
-                conn.Open();
-                using (var r = cmd.ExecuteReader())
-                {
-                    while (r.Read()) results.Add(Map(r));
-                }
-            }
-            return results;
-        }
-
-        public int Insert(Claim claim)
-        {
-            const string sql = @"INSERT INTO dbo.Claims
-                                    (PolicyId, ClaimantName, Amount, Status, FiledOn, DocumentPath, Notes)
-                                 VALUES
-                                    (@PolicyId, @ClaimantName, @Amount, @Status, @FiledOn, @DocumentPath, @Notes);
-                                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
-            using (var conn = new SqlConnection(_connectionString))
-            using (var cmd = new SqlCommand(sql, conn))
-            {
-                cmd.Parameters.AddWithValue("@PolicyId", claim.PolicyId);
-                cmd.Parameters.AddWithValue("@ClaimantName", claim.ClaimantName ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@Amount", claim.Amount);
-                cmd.Parameters.AddWithValue("@Status", claim.Status ?? "Pending");
-                cmd.Parameters.AddWithValue("@FiledOn", claim.FiledOn == default(DateTime) ? DateTime.UtcNow : claim.FiledOn);
-                cmd.Parameters.AddWithValue("@DocumentPath", claim.DocumentPath ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@Notes", claim.Notes ?? (object)DBNull.Value);
-                conn.Open();
-                var newId = (int)cmd.ExecuteScalar();
-                AppLogger.Info("Inserted claim " + newId);
-                return newId;
-            }
-        }
-
-        public void UpdateScore(int claimId, int score)
-        {
-            const string sql = "UPDATE dbo.Claims SET Score = @Score WHERE ClaimId = @Id";
-            using (var conn = new SqlConnection(_connectionString))
-            using (var cmd = new SqlCommand(sql, conn))
-            {
-                cmd.Parameters.AddWithValue("@Score", score);
-                cmd.Parameters.AddWithValue("@Id", claimId);
-                conn.Open();
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        private static Claim Map(SqlDataReader r) => new Claim
-        {
-            ClaimId       = r.GetInt32(r.GetOrdinal("ClaimId")),
-            PolicyId      = r.GetInt32(r.GetOrdinal("PolicyId")),
-            PolicyNumber  = r["PolicyNumber"] as string,
-            ClaimantName  = r["ClaimantName"] as string,
-            Amount        = r.GetDecimal(r.GetOrdinal("Amount")),
-            Status        = r["Status"] as string,
-            FiledOn       = r.GetDateTime(r.GetOrdinal("FiledOn")),
-            ClosedOn      = r["ClosedOn"] as DateTime?,
-            DocumentPath  = r["DocumentPath"] as string,
-            Score         = r["Score"] as int?,
-            Notes         = r["Notes"] as string
-        };
+        _dbContext = dbContext;
+        _logger = logger;
     }
+
+    public List<Claim> GetRecent(int top = 50) =>
+        GetRecentAsync(top).GetAwaiter().GetResult();
+
+    public Task<List<Claim>> GetRecentAsync(
+        int top = 50,
+        CancellationToken cancellationToken = default) =>
+        ClaimsWithPolicies()
+            .OrderByDescending(claim => claim.FiledOn)
+            .Take(top)
+            .ToListAsync(cancellationToken);
+
+    public Claim? GetById(int claimId) =>
+        GetByIdAsync(claimId).GetAwaiter().GetResult();
+
+    public Task<Claim?> GetByIdAsync(
+        int claimId,
+        CancellationToken cancellationToken = default) =>
+        ClaimsWithPolicies()
+            .SingleOrDefaultAsync(claim => claim.ClaimId == claimId, cancellationToken);
+
+    public List<Claim> SearchByClaimant(string namePart) =>
+        SearchByClaimantAsync(namePart).GetAwaiter().GetResult();
+
+    public Task<List<Claim>> SearchByClaimantAsync(
+        string namePart,
+        CancellationToken cancellationToken = default)
+    {
+        namePart ??= string.Empty;
+
+        return ClaimsWithPolicies()
+            .Where(claim => claim.ClaimantName != null && claim.ClaimantName.Contains(namePart))
+            .ToListAsync(cancellationToken);
+    }
+
+    public int Insert(Claim claim) =>
+        InsertAsync(claim).GetAwaiter().GetResult();
+
+    public async Task<int> InsertAsync(
+        Claim claim,
+        CancellationToken cancellationToken = default)
+    {
+        var entity = new Claim
+        {
+            PolicyId = claim.PolicyId,
+            ClaimantName = claim.ClaimantName,
+            Amount = claim.Amount,
+            Status = claim.Status ?? "Pending",
+            FiledOn = claim.FiledOn == default ? DateTime.UtcNow : claim.FiledOn,
+            DocumentPath = claim.DocumentPath,
+            Notes = claim.Notes
+        };
+
+        await _dbContext.Claims.AddAsync(entity, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Inserted claim {ClaimId}", entity.ClaimId);
+        return entity.ClaimId;
+    }
+
+    public void UpdateScore(int claimId, int score) =>
+        UpdateScoreAsync(claimId, score).GetAwaiter().GetResult();
+
+    public async Task UpdateScoreAsync(
+        int claimId,
+        int score,
+        CancellationToken cancellationToken = default)
+    {
+        var claim = await _dbContext.Claims
+            .SingleOrDefaultAsync(entity => entity.ClaimId == claimId, cancellationToken);
+
+        if (claim is null)
+        {
+            return;
+        }
+
+        claim.Score = score;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private IQueryable<Claim> ClaimsWithPolicies() =>
+        from claim in _dbContext.Claims.AsNoTracking()
+        join policy in _dbContext.Policies.AsNoTracking()
+            on claim.PolicyId equals policy.PolicyId
+        select new Claim
+        {
+            ClaimId = claim.ClaimId,
+            PolicyId = claim.PolicyId,
+            PolicyNumber = policy.PolicyNumber,
+            ClaimantName = claim.ClaimantName,
+            Amount = claim.Amount,
+            Status = claim.Status,
+            FiledOn = claim.FiledOn,
+            ClosedOn = claim.ClosedOn,
+            DocumentPath = claim.DocumentPath,
+            Score = claim.Score,
+            Notes = claim.Notes
+        };
 }

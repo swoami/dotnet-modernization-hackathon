@@ -21,9 +21,9 @@ Target framework: **.NET Framework 4.6.1** (all projects).
 | Concern | Legacy pattern | Where to look |
 | --- | --- | --- |
 | Framework | .NET Fx 4.6.1, `packages.config` | every `*.csproj` |
-| Config | `appsettings.json` + `IConfiguration` (`AppSettings` / `ConnectionStrings`) | `Common/Config/ConfigHelper.cs` |
+| Config | `appsettings.json` + host-provided `IConfiguration` (`AppSettings` / `ConnectionStrings`) | each application's `Program.cs` |
 | Data access | Raw ADO.NET, inline SQL, string-concat parameters in one place | `Data/ClaimsRepository.cs` |
-| Logging | `Microsoft.Extensions.Logging` console provider + `Trace.WriteLine` | `Common/Logging/AppLogger.cs` |
+| Logging | `ILogger` through the shared host logging pipeline | `Common/Logging/ContosoLoggingExtensions.cs` |
 | Local file I/O | Writes to `C:\ClaimsFiles\` and `C:\Exports\` | `Web/Upload.aspx.cs`, `Worker/ClaimsExporterService.cs` |
 | Secrets | Plain-text SQL user/password in config | `Web/Web.config`, `Worker/App.config` |
 | Hosting | IIS (Web + WCF) + Windows Service (Worker) | `*.csproj`, `Worker/ProjectInstaller.cs` |
@@ -40,6 +40,22 @@ Building the legacy app is **not required** to modernize it. If you insist:
 
 Update the `<connectionStrings>` in `Web/Web.config`, `Services/Web.config`, and
 `Worker/App.config`.
+
+## Local development login accounts
+
+After running `db/001-schema.sql` and `db/002-seed.sql`, use one of these
+development-only accounts to sign in locally. The seed script contains exactly
+one account for each currently seeded role; all use the documented demo
+password `Password1`.
+
+| Role | Username |
+| --- | --- |
+| Agent | `agent1` |
+| Adjuster | `adjuster` |
+| Admin | `admin` |
+
+These accounts are only for local development. Do not run the seed script
+against production or reuse its demo password.
 
 ## Do NOT
 

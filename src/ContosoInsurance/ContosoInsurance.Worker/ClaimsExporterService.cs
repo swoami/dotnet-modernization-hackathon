@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using ContosoInsurance.Common.Storage;
 using ContosoInsurance.Data;
 using ContosoInsurance.Data.Models;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -21,21 +20,17 @@ namespace ContosoInsurance.Worker
         private readonly ExportOptions _options;
         private readonly IClaimDocumentStore _store;
         private readonly IServiceScopeFactory _scopeFactory;
-        private readonly string _connectionString;
 
         public ClaimsExporterService(
             ILogger<ClaimsExporterService> logger,
             IOptions<ExportOptions> options,
             IClaimDocumentStore store,
-            IServiceScopeFactory scopeFactory,
-            IConfiguration configuration)
+            IServiceScopeFactory scopeFactory)
         {
             _logger = logger;
             _options = options.Value;
             _store = store;
             _scopeFactory = scopeFactory;
-            _connectionString = configuration.GetConnectionString("ContosoDb")
-                ?? throw new InvalidOperationException("Connection string 'ContosoDb' is not configured.");
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -76,8 +71,9 @@ namespace ContosoInsurance.Worker
         {
             var blobName = "claims-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + ".csv";
 
-            var repo = new ClaimsRepository(_connectionString);
-            var claims = repo.GetRecent(1000);
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var repo = scope.ServiceProvider.GetRequiredService<ClaimsRepository>();
+            var claims = await repo.GetRecentAsync(1000, cancellationToken);
 
             var sb = new StringBuilder();
             sb.AppendLine("ClaimId,PolicyNumber,ClaimantName,Amount,Status,FiledOn,Score");
@@ -101,7 +97,6 @@ namespace ContosoInsurance.Worker
                 blobName, claims.Count, _options.ContainerName);
 
             // Persist audit record
-            await using var scope = _scopeFactory.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<ContosoDbContext>();
             db.ExportLogs.Add(new ExportLog
             {

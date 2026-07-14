@@ -8,6 +8,29 @@ Keep entries short. Bullets are fine. One-liners are fine.
 
 ---
 
+## Track A — Data EF Core modernization (`track/a-web-api`)
+
+### Manual follow-up
+
+- **Removing the static `AppLogger` facade** — after the Data repositories and
+  Worker had constructor-injected `ILogger<T>`, `AppLogger` and the legacy
+  `ConfigHelper` had no consumers. Delete those facades and their direct-only
+  packages rather than retaining compatibility layers; keep
+  `AddContosoLogging()` as the shared host logging setup.
+- **Repository DI needs a scope in hosted services** — EF Core repositories take a scoped
+  `ContosoDbContext`; resolve them within an `IServiceScopeFactory` scope in a
+  `BackgroundService` rather than retaining a context or connection string for its lifetime.
+- **Read-only repository results need `AsNoTracking()`** — projecting claim/policy joins into
+  detached `Claim` results preserves the old repository behavior while allowing async EF Core
+  queries and a parameterized LINQ substring search.
+- **Identity's `PasswordHasher<TUser>` encapsulates a versioned PBKDF2 format** — use its
+  `SuccessRehashNeeded` result to refresh a valid hash, rather than retaining a legacy verifier.
+- **Development seed accounts must be verifiable and documented** — seed exactly one unique
+  account per role with `PasswordHasher<User>`-compatible PBKDF2 hashes, and document the
+  intentionally public local-demo credential outside application configuration.
+
+---
+
 ## Track B — Worker & Storage modernization (`track/b-worker-storage`)
 
 ### Tooling used

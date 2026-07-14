@@ -1,49 +1,44 @@
 using System;
-using Microsoft.Data.SqlClient;
-using System.Security.Cryptography;
-using System.Text;
-using ContosoInsurance.Common.Config;
+using System.Threading;
+using System.Threading.Tasks;
 using ContosoInsurance.Data.Models;
-using ContosoInsurance.Data.Security;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
-namespace ContosoInsurance.Data
+namespace ContosoInsurance.Data;
+
+public class UserRepository
 {
-    /// <summary>
-    /// LEGACY: passwords hashed with SHA1 + per-user salt. Deliberately weak so
-    /// Copilot / appmod can recommend a modern KDF (PBKDF2 / Argon2 / Data Protection).
-    /// </summary>
-    public class UserRepository
+    private readonly ContosoDbContext _dbContext;
+    private readonly IPasswordHasher<User> _passwordHasher;
+
+    public UserRepository(
+        ContosoDbContext dbContext,
+        IPasswordHasher<User> passwordHasher)
     {
-        private readonly string _connectionString = ConfigHelper.GetConnectionString("ContosoDb");
+        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
+    }
 
-        public User? FindByUsername(string username)
+    public User? FindByUsername(string username) =>
+        FindByUsernameAsync(username).GetAwaiter().GetResult();
+
+    public Task<User?> FindByUsernameAsync(
+        string username,
+        CancellationToken cancellationToken = default) =>
+        _dbContext.Users
+            .AsNoTracking()
+            .SingleOrDefaultAsync(user => user.Username == username, cancellationToken);
+
+    public PasswordVerificationResult VerifyPassword(User? user, string? password)
+    {
+        if (user is null ||
+            string.IsNullOrWhiteSpace(user.PasswordHash) ||
+            password is null)
         {
-            const string sql = @"SELECT UserId, Username, PasswordHash, Salt, Role
-                                 FROM   dbo.Users
-                                 WHERE  Username = @Username";
-            using (var conn = new SqlConnection(_connectionString))
-            using (var cmd = new SqlCommand(sql, conn))
-            {
-                cmd.Parameters.AddWithValue("@Username", username);
-                conn.Open();
-                using (var r = cmd.ExecuteReader())
-                {
-                    if (!r.Read()) return null;
-                    return new User
-                    {
-                        UserId       = r.GetInt32(0),
-                        Username     = r.GetString(1),
-                        PasswordHash = r.GetString(2),
-                        Salt         = r.GetString(3),
-                        Role         = r.GetString(4),
-                    };
-                }
-            }
+            return PasswordVerificationResult.Failed;
         }
 
-        public bool VerifyPassword(User user, string password)
-        {
-            return LegacyPasswordVerifier.Verify(user, password);
-        }
+        return _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
     }
 }

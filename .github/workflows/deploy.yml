@@ -3,6 +3,9 @@ name: Deploy ContosoInsurance
 on:
   push:
     branches: [main]
+    paths:
+      - 'src/ContosoInsurance/**'
+      - 'infra/**'
   workflow_dispatch:
     inputs:
       provision:
