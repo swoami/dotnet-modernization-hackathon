@@ -175,8 +175,8 @@ public static class DbInitializer
         {
             var now = DateTime.UtcNow;
             context.Claims.AddRange(
-                new Claim { Policy = policies[0], ClaimantName = "Alice Johnson", Amount = 4200.00m, Status = "Pending", FiledOn = now.AddDays(-3), DocumentPath = @"C:\ClaimsFiles\1\photo.jpg", Notes = "Rear-end collision" },
-                new Claim { Policy = policies[1], ClaimantName = "Bob Smith", Amount = 18500.00m, Status = "Pending", FiledOn = now.AddDays(-7), DocumentPath = @"C:\ClaimsFiles\2\estimate.pdf", Notes = "Water damage" },
+                new Claim { Policy = policies[0], ClaimantName = "Alice Johnson", Amount = 4200.00m, Status = "Pending", FiledOn = now.AddDays(-3), DocumentPath = "claim-docs/1/photo.jpg", Notes = "Rear-end collision" },
+                new Claim { Policy = policies[1], ClaimantName = "Bob Smith", Amount = 18500.00m, Status = "Pending", FiledOn = now.AddDays(-7), DocumentPath = "claim-docs/2/estimate.pdf", Notes = "Water damage" },
                 new Claim { Policy = policies[2], ClaimantName = "Carol Diaz", Amount = 1200.00m, Status = "Approved", FiledOn = now.AddDays(-40), Notes = "Windshield replacement" },
                 new Claim { Policy = policies[3], ClaimantName = "David Nguyen", Amount = 25000.00m, Status = "Pending", FiledOn = now.AddDays(-1) },
                 new Claim { Policy = policies[4], ClaimantName = "Eve Patel", Amount = 9800.00m, Status = "Rejected", FiledOn = now.AddDays(-60), Notes = "Out of policy period" });
