@@ -1,0 +1,2064 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Assessment - ContosoInsurance.Common</title>
+<style>
+:root {
+  --bg-primary: #ffffff;
+  --bg-card: #f8f9fa;
+  --bg-page: #f0f1f3;
+  --text-primary: #24292f;
+  --text-secondary: #57606a;
+  --text-muted: #6b7280;
+  --border-color: #d0d7de;
+  --border-light: #e1e4e8;
+  --link-color: #2563eb;
+  --color-mandatory: #E3008C;
+  --color-potential: #637CEF;
+  --color-optional: #A19F9D;
+  --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-family); font-size: 13px; color: var(--text-primary); background: var(--bg-primary); line-height: 1.5; margin: 0; padding: 0; }
+a { color: var(--link-color); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Page layout ───────────────────────────────────────────── */
+.main { margin: 0; padding: 24px 32px; background: var(--bg-primary); }
+.back-link { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; display: block; }
+h1 { font-weight: 600; font-size: 20px; color: var(--text-primary); margin-bottom: 20px; }
+
+/* ── Report cards (matches VS Code .vscode-report-card) ──── */
+.report-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 4px; padding: 12px; margin-bottom: 20px; }
+.report-card h2 { font-size: 14px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.report-card-body { margin-top: 16px; }
+
+/* ── Component Information (two-column) ────────────────── */
+.app-info-container { display: flex; gap: 8px; flex-wrap: wrap; }
+.app-info-column { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 8px; }
+.app-info-row { display: flex; align-items: baseline; }
+.app-info-label { width: 136px; flex-shrink: 0; font-weight: 600; color: var(--text-primary); }
+.app-info-value { flex: 1; color: var(--text-primary); }
+
+/* ── Issue Summary (pie charts + legend) ─────────────────── */
+.cards-container { display: flex; align-items: stretch; gap: 20px; flex-wrap: wrap; }
+.issue-summary-card { flex: 2; }
+.domain-summary-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; }
+.domain-summary-item { flex: 1; min-width: 120px; text-align: center; padding: 0 16px; border-right: 1px solid var(--border-light); }
+.domain-summary-item:last-child { border-right: none; }
+.domain-summary-item h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 8px; }
+.domain-summary-item .count { font-size: 12px; color: var(--text-secondary); }
+.criticality-legend { display: flex; flex-wrap: wrap; gap: 15px; padding-top: 12px; justify-content: center; }
+.criticality-legend .legend-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); }
+.legend-swatch { display: inline-block; width: 1em; height: 1em; border-radius: 2px; }
+
+/* ── Issue list tables ───────────────────────────────────── */
+.issue-section { margin-top: 20px; }
+.issue-section h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.issue-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 600px; }
+.issue-table th { text-align: left; text-transform: uppercase; font-weight: 600; font-size: calc(13px * 0.875); padding: 6px 8px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); position: sticky; top: 0; z-index: 1; }
+.issue-table td { padding: 12px 8px; border-bottom: 1px solid var(--border-light); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.col-issue { width: 55%; }
+.col-criticality { width: 25%; }
+.col-storypoint { width: 20%; }
+
+/* ── Target dropdown ─────────────────────────────────────── */
+.target-select-container { margin: 4px 0 16px 0; display: flex; align-items: center; gap: 8px; }
+.target-select-container label { font-weight: 600; color: var(--text-primary); font-size: 14px; }
+.target-select-container select { font-family: var(--font-family); font-size: 13px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; }
+
+/* ── Filter bar ──────────────────────────────────────────── */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0 8px 0; align-items: center; }
+.multi-select { position: relative; display: inline-block; min-width: 140px; }
+.multi-select-btn { font-family: var(--font-family); font-size: 13px; padding: 4px 24px 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; width: 100%; text-align: left; position: relative; white-space: nowrap; }
+.multi-select-btn::after { content: '\25BE'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-secondary); }
+.multi-select-dropdown { display: none; position: absolute; top: 100%; left: 0; min-width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; margin-top: 2px; }
+.multi-select.open .multi-select-dropdown { display: block; }
+.multi-select-option { display: flex; align-items: center; gap: 6px; padding: 5px 10px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.multi-select-option:hover { background: var(--bg-secondary); }
+.multi-select-option input[type=checkbox] { margin: 0; cursor: pointer; }
+.clear-filters { font-size: 12px; color: var(--link-color); cursor: pointer; margin-left: 4px; }
+
+/* ── Criticality labels (colored square + text) ──────────── */
+.crit-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.crit-square { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.crit-square-mandatory { background: var(--color-mandatory); }
+.crit-square-potential { background: var(--color-potential); }
+.crit-square-optional { background: var(--color-optional); }
+
+/* ── Expandable rows ─────────────────────────────────────── */
+.expand-btn { background: none; border: none; cursor: pointer; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; transition: transform 0.15s; padding: 0; vertical-align: middle; flex-shrink: 0; }
+.expand-btn.open { transform: rotate(90deg); }
+.issue-title-cell { display: flex; align-items: center; gap: 4px; }
+.detail-row td { padding: 0; border-bottom: 1px solid var(--border-light); white-space: normal; overflow: visible; text-overflow: clip; }
+.detail-content { display: flex; gap: 0; padding: 8px 8px 8px 32px; min-width: 0; }
+.file-list { flex: 0 0 50%; min-width: 0; overflow: hidden; }
+.file-list table { width: 100%; border-collapse: collapse; }
+.file-list th { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 8px; border-bottom: 1px solid var(--border-color); text-align: left; height: 32px; }
+.file-list td { font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+.file-list .file-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; display: block; }
+.file-list .position { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+.explanation-panel { flex: 1; padding-left: 16px; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; }
+.explanation-panel h4 { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border-color); height: 32px; margin: 0; }
+.explanation-panel p { font-size: 13px; padding: 8px 0; color: var(--text-primary); line-height: 1.6; white-space: normal; word-break: break-word; }
+
+/* ── Experimental badge ──────────────────────────────────── */
+.badge-experimental { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #fef9c3; color: #854d0e; vertical-align: middle; margin-left: 8px; cursor: default; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+.footer { text-align: center; margin-top: 24px; color: var(--text-muted); font-size: 13px; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 800px) {
+  .main { padding: 16px; }
+  .app-info-container { flex-direction: column; }
+  .domain-summary-container { flex-direction: column; }
+  .domain-summary-item { border-right: none; border-bottom: 1px solid var(--border-light); padding-bottom: 12px; }
+  .detail-content { flex-direction: column; }
+  .file-list { flex: none; width: 100%; }
+  .explanation-panel { padding-left: 0; padding-top: 8px; }
+}
+/* ── Tab navigation ──────────────────────────────────────── */
+.tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border-color); margin-bottom: 28px; flex-wrap: wrap; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 18px; font-size: 13px; font-family: var(--font-family); color: var(--text-secondary); cursor: pointer; margin-bottom: -1px; white-space: nowrap; position: relative; }
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--link-color); border-bottom-color: var(--link-color); font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Tooltip on tab ──────────────────────────────────────── */
+.tab-btn[data-tooltip]::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #24292f; color: #ffffff; font-size: 12px; font-weight: 400; padding: 6px 10px; border-radius: 4px; white-space: normal; width: max-content; max-width: 260px; text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; }
+.tab-btn[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Fact content — prose column ─────────────────────────── */
+.fact-content { max-width: 860px; margin: 0 auto; line-height: 1.75; color: var(--text-primary); font-size: 14px; }
+.fact-content h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h1 + p { margin-top: 6px; color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.fact-content h2 { font-size: 17px; font-weight: 700; margin: 36px 0 12px 0; padding-bottom: 6px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h3 { font-size: 14px; font-weight: 700; margin: 24px 0 8px 0; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.04em; font-size: 12px; color: var(--text-secondary); }
+.fact-content p { margin: 10px 0; color: var(--text-primary); }
+.fact-content ul, .fact-content ol { margin: 10px 0 10px 22px; }
+.fact-content li { margin: 5px 0; }
+.fact-content a { color: var(--link-color); }
+.fact-content a:hover { text-decoration: underline; }
+
+/* ── Fact tables ─────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 16px 0; }
+.fact-content table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 13px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+.fact-content thead { background: var(--bg-card); }
+.fact-content th { text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 14px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+.fact-content td { padding: 9px 14px; border-bottom: 1px solid var(--border-light); vertical-align: top; color: var(--text-primary); }
+.fact-content tr:last-child td { border-bottom: none; }
+.fact-content tbody tr:hover { background: #f6f8fa; }
+
+/* ── Fact code ───────────────────────────────────────────── */
+.fact-content code { font-family: var(--font-mono); font-size: 12px; background: #f0f1f3; padding: 2px 6px; border-radius: 4px; color: #c7254e; }
+.fact-content pre { background: #f6f8fa; border: 1px solid var(--border-light); border-radius: 6px; padding: 14px 16px; overflow-x: auto; margin: 14px 0; }
+.fact-content pre code { background: none; color: var(--text-primary); padding: 0; border-radius: 0; }
+.fact-content hr { border: none; border-top: 1px solid var(--border-light); margin: 28px 0; }
+.fact-content strong { font-weight: 600; }
+.fact-content em { font-style: italic; }
+.fact-content blockquote { border-left: 3px solid var(--border-color); margin: 12px 0; padding: 4px 16px; color: var(--text-secondary); }
+.fact-unavailable { padding: 32px 0; }
+.fact-unavailable h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); text-transform: none; letter-spacing: 0; margin: 0 0 12px 0; }
+.fact-unavailable p { margin: 0 0 8px 0; color: var(--text-secondary); }
+.fact-unavailable ol, .fact-unavailable ul { margin: 0 0 0 22px; color: var(--text-primary); }
+.fact-unavailable li { margin: 6px 0; }
+
+/* ── Mermaid diagram card ─────────────────────────────────── */
+.mermaid { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 24px 16px; margin: 20px 0; overflow-x: auto; text-align: center; cursor: pointer; position: relative; }
+.mermaid:hover { border-color: var(--border-color); }
+.mermaid svg { max-width: 100%; height: auto !important; display: inline-block; }
+.mermaid-zoom-hint { position: absolute; top: 8px; right: 10px; font-size: 11px; color: var(--text-muted); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.mermaid:hover .mermaid-zoom-hint { opacity: 1; }
+
+/* ── Diagram lightbox ────────────────────────────────────── */
+.diagram-lightbox { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.7); backdrop-filter: blur(2px); align-items: center; justify-content: center; cursor: zoom-out; padding: 48px 32px; }
+.diagram-lightbox.open { display: flex; }
+.diagram-lightbox-inner { background: #ffffff; border-radius: 10px; padding: 32px; width: 88vw; max-height: 88vh; overflow: hidden; cursor: default; box-shadow: 0 24px 64px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; }
+.diagram-lightbox-inner svg { width: 100% !important; height: auto !important; max-height: 76vh; display: block; }
+.diagram-lightbox-close { position: fixed; top: 20px; right: 24px; background: #ffffff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1001; }
+.diagram-lightbox-close:hover { background: var(--bg-card); }
+.diagram-lightbox-hint { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.55); color: #ffffff; font-size: 12px; padding: 6px 14px; border-radius: 20px; pointer-events: none; white-space: nowrap; z-index: 1001; }
+</style>
+<script>
+window.__mermaidPending = [];
+window.__mermaidReady = false;
+window.__renderMermaidIn = function(container) {
+  // Until the real implementation overrides this (after the ES module import
+  // resolves), just queue the container so we can render it later.
+  if (container) { window.__mermaidPending.push(container); }
+};
+</script>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: false, theme: 'default', flowchart: { useMaxWidth: true }, sequence: { useMaxWidth: true } });
+
+// Real implementation: actually run mermaid on the unprocessed diagrams in the
+// given container (only ones not already rendered). Adds a "Click to expand"
+// hint span after each successful render so the lightbox affordance is
+// discoverable.
+window.__renderMermaidIn = function(container) {
+  var nodes = container ? container.querySelectorAll('.mermaid:not([data-processed])') : [];
+  if (nodes.length > 0) {
+    mermaid.run({ nodes: Array.from(nodes) }).then(function() {
+      nodes.forEach(function(node) {
+        if (!node.querySelector('.mermaid-zoom-hint')) {
+          var hint = document.createElement('span');
+          hint.className = 'mermaid-zoom-hint';
+          hint.textContent = 'Click to expand';
+          node.appendChild(hint);
+        }
+      });
+    });
+  }
+};
+
+// Drain any containers that were queued by the shim while mermaid was loading.
+// Use a Set to dedupe in case a container was both queued and is also the
+// initial-active panel below.
+var drained = new Set();
+(window.__mermaidPending || []).forEach(function(c) {
+  if (!drained.has(c)) { drained.add(c); window.__renderMermaidIn(c); }
+});
+window.__mermaidPending = [];
+window.__mermaidReady = true;
+
+// Render diagrams visible on initial load (the active tab panel(s) may not have
+// been queued by anyone — DOMContentLoaded handlers run before this if the
+// module is cached, after this if it's not, so handle both cases here).
+function renderActivePanels() {
+  document.querySelectorAll('.tab-panel.active').forEach(function(p) {
+    if (!drained.has(p)) { drained.add(p); window.__renderMermaidIn(p); }
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderActivePanels);
+} else {
+  renderActivePanels();
+}
+</script>
+</head><body>
+<div id="diagram-lightbox" class="diagram-lightbox" role="dialog" aria-modal="true">
+  <button class="diagram-lightbox-close" id="diagram-lightbox-close" aria-label="Close">&#x2715;</button>
+  <div class="diagram-lightbox-hint">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Double-click to reset</div>
+  <div class="diagram-lightbox-inner" id="diagram-lightbox-inner"></div>
+</div>
+<div class="main">
+<a class="back-link" href="../../index.html">&#8592; Back to aggregate dashboard</a>
+<h1>ContosoInsurance.Common</h1>
+<div class="report-card">
+  <h2>Component Information</h2>
+  <div class="report-card-body">
+    <div class="app-info-container">
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Component Name</span><span class="app-info-value">ContosoInsurance.Common</span></div>
+        <div class="app-info-row"><span class="app-info-label">Repository</span><span class="app-info-value">dotnet-modernization-hackathon</span></div>
+        <div class="app-info-row"><span class="app-info-label">Application</span><span class="app-info-value">dotnet-modernization-hackathon</span></div>
+      </div>
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Effort</span><span class="app-info-value" id="effort-display">L (total story points: 66)</span></div>
+        <div class="app-info-row"><span class="app-info-label">Build Tools</span><span class="app-info-value">MSBuild</span></div>
+        <div class="app-info-row"><span class="app-info-label">Frameworks</span><span class="app-info-value">.NETFramework, Version=v4.6.1</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-issues" data-tooltip="Issues detected in the source code">Issues</button>
+  <button class="tab-btn" data-tab="tab-arch" data-tooltip="How the app&#39;s layers connect — from UI to data.">Architecture</button>
+  <button class="tab-btn" data-tab="tab-api" data-tooltip="Endpoints exposed by this app and how services communicate.">API Contracts</button>
+  <button class="tab-btn" data-tab="tab-config" data-tooltip="Environment settings, runtime profiles, and deployment manifests.">Configuration</button>
+  <button class="tab-btn" data-tab="tab-workflows" data-tooltip="Domain entities and the core flows users move through.">Business Workflows</button>
+  <button class="tab-btn" data-tab="tab-deps" data-tooltip="Libraries and frameworks this app depends on, grouped by category.">Dependencies</button>
+  <button class="tab-btn" data-tab="tab-data" data-tooltip="Database schema, entity relationships, and persistence behavior.">Data Model</button>
+</nav>
+<div id="tab-issues" class="tab-panel active">
+<div class="target-select-container">
+  <label for="target-select">Target Compute Service:</label>
+  <select id="target-select" onchange="onTargetChange(this.value)">
+    <option value="AppService.Windows">Azure App Service</option>
+    <option value="AppService.Linux">Azure Kubernetes Service</option>
+    <option value="AKS.Linux">Azure Container Apps</option>
+    <option value="AKS.Windows">Azure App Service Container</option>
+    <option value="ACA">Azure App Service Managed Instance</option>
+  </select>
+</div>
+<div class="report-card">
+  <h2>Issue Summary</h2>
+  <div class="report-card-body">
+    <div class="domain-summary-container" id="donut-container">
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-mandatory)" stroke-width="15" stroke-dasharray="58.48 219.91" stroke-dashoffset="-0.00"/>
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-potential)" stroke-width="15" stroke-dasharray="58.48 219.91" stroke-dashoffset="-59.98"/>
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-optional)" stroke-width="15" stroke-dasharray="98.46 219.91" stroke-dashoffset="-119.95"/>
+</svg>
+
+        <h3>Cloud Readiness</h3>
+        <div class="count">11 issues</div>
+      </div>
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-mandatory)" stroke-width="15" stroke-dasharray="145.11 219.91" stroke-dashoffset="-0.00"/>
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-potential)" stroke-width="15" stroke-dasharray="53.48 219.91" stroke-dashoffset="-146.61"/>
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-optional)" stroke-width="15" stroke-dasharray="16.83 219.91" stroke-dashoffset="-201.59"/>
+</svg>
+
+        <h3>DotNET Upgrade</h3>
+        <div class="count">12 issues</div>
+      </div>
+    </div>
+    <div class="criticality-legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-mandatory)"></span>Mandatory</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-potential)"></span>Potential</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-optional)"></span>Optional</div>
+    </div>
+  </div>
+</div>
+<div class="filter-bar" id="filter-bar">
+  <div class="multi-select" id="domain-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('domain-ms')">Domain</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="cloud-readiness" onchange="onMultiSelectChange('domain-ms','Domain')"/> Cloud Readiness</label>
+      <label class="multi-select-option"><input type="checkbox" value="dotnet-upgrade" onchange="onMultiSelectChange('domain-ms','Domain')"/> DotNET Upgrade</label>
+    </div>
+  </div>
+  <div class="multi-select" id="criticality-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('criticality-ms')">Criticality</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="mandatory" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Mandatory</label>
+      <label class="multi-select-option"><input type="checkbox" value="potential" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Potential</label>
+      <label class="multi-select-option"><input type="checkbox" value="optional" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Optional</label>
+    </div>
+  </div>
+  <a class="clear-filters" href="javascript:void(0)" onclick="clearAllFilters()">Clear all</a>
+</div>
+<div class="issue-section" data-domain="cloud-readiness">
+  <h2>Cloud Readiness</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{"AppService.Windows":{"effort":3,"severity":"mandatory"},"AppService.Linux":{"effort":3,"severity":"mandatory"},"AKS.Linux":{"effort":3,"severity":"mandatory"},"AKS.Windows":{"effort":3,"severity":"information"},"ACA":{"effort":3,"severity":"mandatory"},"AppServiceContainer.Linux":{"effort":3,"severity":"mandatory"},"AppServiceContainer.Windows":{"effort":3,"severity":"information"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"information"}}' data-default-effort="3" data-default-severity="mandatory" data-rule="Local.0010" onclick="toggleRow('row-cloudreadiness-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-0">&#x276F;</button> Service control manager API calls detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ClaimsExporterService.cs">ContosoInsurance.Worker\ClaimsExporterService.cs</span></td><td><span class="position">Line 12, Col 41</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\Program.cs">ContosoInsurance.Worker\Program.cs</span></td><td><span class="position">Line 8, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\Program.cs">ContosoInsurance.Worker\Program.cs</span></td><td><span class="position">Line 8, Col 32</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ProjectInstaller.cs">ContosoInsurance.Worker\ProjectInstaller.cs</span></td><td><span class="position">Line 7, Col 36</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ProjectInstaller.cs">ContosoInsurance.Worker\ProjectInstaller.cs</span></td><td><span class="position">Line 11, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ProjectInstaller.cs">ContosoInsurance.Worker\ProjectInstaller.cs</span></td><td><span class="position">Line 11, Col 39</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ProjectInstaller.cs">ContosoInsurance.Worker\ProjectInstaller.cs</span></td><td><span class="position">Line 13, Col 26</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ProjectInstaller.cs">ContosoInsurance.Worker\ProjectInstaller.cs</span></td><td><span class="position">Line 16, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ProjectInstaller.cs">ContosoInsurance.Worker\ProjectInstaller.cs</span></td><td><span class="position">Line 16, Col 39</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ProjectInstaller.cs">ContosoInsurance.Worker\ProjectInstaller.cs</span></td><td><span class="position">Line 21, Col 28</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Service control manager API calls detected.</p><p>If you are targeting Managed Instance on Azure App Service, SCM access is unsupported. Run required services externally (VM/AKS) and interact via HTTP(S)/queues; use platform features instead of SCM.</p><p>While if targeting other Azure compute services, applications cannot access SCM to manage/enumerate/start/stop services. Since some legacy code does require access to SCM, these APIs are faked in user mode to keep the applications working; but these stubs are essentially not functional.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{"AppService.Windows":{"effort":1,"severity":"mandatory"},"AppService.Linux":{"effort":1,"severity":"mandatory"},"AKS.Linux":{"effort":1,"severity":"mandatory"},"AKS.Windows":{"effort":1,"severity":"information"},"ACA":{"effort":1,"severity":"mandatory"},"AppServiceContainer.Linux":{"effort":1,"severity":"mandatory"},"AppServiceContainer.Windows":{"effort":1,"severity":"information"},"AppServiceManagedInstance.Windows":{"effort":1,"severity":"potential"}}' data-default-effort="1" data-default-severity="mandatory" data-rule="Local.0002" onclick="toggleRow('row-cloudreadiness-1', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-1">&#x276F;</button> Hardcoded local or network paths detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-1" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Upload.aspx.cs">ContosoInsurance.Web\Upload.aspx.cs</span></td><td><span class="position">Line 18, Col 69</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ClaimsExporterService.cs">ContosoInsurance.Worker\ClaimsExporterService.cs</span></td><td><span class="position">Line 59, Col 61</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Your application has hardcoded local or network paths that might not be available on Azure.</p><p>Review and ensure that you are attempting to access paths that would be available when your application lives in Azure.</p><p> Application should use paths relative to application root folder or store them in Azure Storage or Azure CDN.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{"AppService.Windows":{"effort":3,"severity":"mandatory"},"AppService.Linux":{"effort":3,"severity":"mandatory"},"AKS.Linux":{"effort":3,"severity":"mandatory"},"AKS.Windows":{"effort":3,"severity":"mandatory"},"ACA":{"effort":3,"severity":"mandatory"},"AppServiceContainer.Linux":{"effort":3,"severity":"mandatory"},"AppServiceContainer.Windows":{"effort":3,"severity":"mandatory"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"information"}}' data-default-effort="3" data-default-severity="mandatory" data-rule="Local.0004" onclick="toggleRow('row-cloudreadiness-2', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-2">&#x276F;</button> Logging to local or network paths detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-2" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Web.config">ContosoInsurance.Web\Web.config</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\App.config">ContosoInsurance.Worker\App.config</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Logging to local or network paths detected.</p><p>If you are targeting Managed Instance on Azure App Service, prefer Application Insights/App Service logging. If filesystem logs are required, write to a mounted Azure Files share configured via storage mounts and Key Vault secrets.</p><p>Logging APIs that write to disk might not work on Azure App Service or Container.</p><p>Use logging that stores logs in locations outside of the host unless its specifically required by your app. You can also use logging capabilities embedded in Azure, such as Azure App Service logging or Application Insights.</p><p>For migrating to AKS, use LogMonitor tool that can capture logs written to files, the console, or write logs and redirect them to Azure.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="potential" data-targets='{"AppService.Windows":{"effort":3,"severity":"potential"},"AppService.Linux":{"effort":3,"severity":"potential"},"AKS.Linux":{"effort":3,"severity":"potential"},"AKS.Windows":{"effort":3,"severity":"potential"},"ACA":{"effort":3,"severity":"potential"},"AppServiceContainer.Linux":{"effort":3,"severity":"potential"},"AppServiceContainer.Windows":{"effort":3,"severity":"potential"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"potential"}}' data-default-effort="3" data-default-severity="potential" data-rule="Database.0002" onclick="toggleRow('row-cloudreadiness-3', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-3">&#x276F;</button> SQL database connection detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-potential"></span>Potential</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-3" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Services\Web.config">ContosoInsurance.Services\Web.config</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Web.config">ContosoInsurance.Web\Web.config</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\App.config">ContosoInsurance.Worker\App.config</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>SQL database connection detected.</p><p>Ensure the database is available/reachable on Azure.</p><p>If it is not, there are multiple ways you can move your data to Azure:<br/>    1. Migrate to Azure SQL Database.<br/>    2. Consider Azure SQL Managed Instance if you need features that are not available in Azure SQL Database and you don’t want to use a VM.<br/>    3. Migrate your database servers directly to SQL Server on Azure VMs.</p><p>To assess database migration effort, you can use Azure Migrate tool, see the link below.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="potential" data-targets='{"AppService.Windows":{"effort":3,"severity":"potential"},"AppService.Linux":{"effort":3,"severity":"potential"},"AKS.Linux":{"effort":3,"severity":"potential"},"AKS.Windows":{"effort":3,"severity":"potential"},"ACA":{"effort":3,"severity":"potential"},"AppServiceContainer.Linux":{"effort":3,"severity":"potential"},"AppServiceContainer.Windows":{"effort":3,"severity":"potential"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"potential"}}' data-default-effort="3" data-default-severity="potential" data-rule="Local.0003" onclick="toggleRow('row-cloudreadiness-4', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-4">&#x276F;</button> Local or network IO operations detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-potential"></span>Potential</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-4" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Upload.aspx.cs">ContosoInsurance.Web\Upload.aspx.cs</span></td><td><span class="position">Line 29, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ClaimsExporterService.cs">ContosoInsurance.Worker\ClaimsExporterService.cs</span></td><td><span class="position">Line 60, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ClaimsExporterService.cs">ContosoInsurance.Worker\ClaimsExporterService.cs</span></td><td><span class="position">Line 80, Col 12</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Your application has local or network IO operations.</p><p>If you are targeting Managed Instance on Azure App Service, move persistent I/O to storage mounts (Azure Files/UNC). Keep local writes to temp only; connect to external dependencies via private endpoints/VNet to reduce latency.</p><p>IO operations outside of the application folder might not be available on Azure App Service. Review and ensure IO APIs are attempting to access paths that will be available when your app is running on App Service sandbox. If you choose the containerized hosting option, your scenario still might be broken or have scalability issues.</p><p>Possible solutions:<br/>    1. Files that the application needs can be deployed with the application or put in Azure Storage. You can use Azure Storage File Shares as a drop-in replacement for on-premises file share.<br/>    2. Other services that the application depends on might need to be migrated to Azure, this way you will get the benefit of lower latency in the cloud.<br/>    3. If your application needs to depend on services that run on-premise, you can connect your Azure and local networks with ExpressRoute, Hybrid Connections, or VPN solutions.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="potential" data-targets='{"AppService.Windows":{"effort":3,"severity":"potential"},"AppService.Linux":{"effort":3,"severity":"potential"},"AKS.Linux":{"effort":3,"severity":"potential"},"AKS.Windows":{"effort":3,"severity":"potential"},"ACA":{"effort":3,"severity":"potential"},"AppServiceContainer.Linux":{"effort":3,"severity":"potential"},"AppServiceContainer.Windows":{"effort":3,"severity":"potential"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"potential"}}' data-default-effort="3" data-default-severity="potential" data-rule="Scale.0002" onclick="toggleRow('row-cloudreadiness-5', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-5">&#x276F;</button> Session state stored in-proc or in local process is detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-potential"></span>Potential</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-5" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Web.config">ContosoInsurance.Web\Web.config</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Session state stored in-proc or in local process is detected.</p><p>If you are targeting Managed Instance on Azure App Service, move session to Azure Cache for Redis or Cosmos DB. In-proc session impedes scale-out; Managed Instance does not change session semantics.</p><p>While if targeting other Azure compute services:</p><p>In-proc or local process stored session state not immediately prevents an application from working in Azure, however, is not recommended because it would make scaling the Azure App Service or Azure Kubernetes Service more difficult.</p><p>Azure provides multiple ways to store session state in a scalable way using Azure Cache for Redis, Azure Cosmos DB or other services.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"AppService.Windows":{"effort":3,"severity":"optional"},"AppService.Linux":{"effort":3,"severity":"optional"},"AKS.Linux":{"effort":3,"severity":"optional"},"AKS.Windows":{"effort":3,"severity":"optional"},"ACA":{"effort":3,"severity":"optional"},"AppServiceContainer.Linux":{"effort":3,"severity":"optional"},"AppServiceContainer.Windows":{"effort":3,"severity":"optional"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"optional"}}' data-default-effort="3" data-default-severity="optional" data-rule="Database.0003" onclick="toggleRow('row-cloudreadiness-6', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-6">&#x276F;</button> System.Data.SqlClient dependency detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-6" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 123, Col 33</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 54, Col 19</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 54, Col 33</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 94, Col 19</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 94, Col 33</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 114, Col 19</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 114, Col 33</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 37, Col 19</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 37, Col 33</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 75, Col 19</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 75, Col 33</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 53, Col 19</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 53, Col 34</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 93, Col 19</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 93, Col 34</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 113, Col 19</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 113, Col 34</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 36, Col 19</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 36, Col 34</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 74, Col 19</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 74, Col 34</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 41, Col 23</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 78, Col 23</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 58, Col 23</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\PolicyRepository.cs">ContosoInsurance.Data\PolicyRepository.cs</span></td><td><span class="position">Line 18, Col 19</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\PolicyRepository.cs">ContosoInsurance.Data\PolicyRepository.cs</span></td><td><span class="position">Line 18, Col 33</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\PolicyRepository.cs">ContosoInsurance.Data\PolicyRepository.cs</span></td><td><span class="position">Line 17, Col 19</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\PolicyRepository.cs">ContosoInsurance.Data\PolicyRepository.cs</span></td><td><span class="position">Line 17, Col 34</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\PolicyRepository.cs">ContosoInsurance.Data\PolicyRepository.cs</span></td><td><span class="position">Line 21, Col 23</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\UserRepository.cs">ContosoInsurance.Data\UserRepository.cs</span></td><td><span class="position">Line 23, Col 19</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\UserRepository.cs">ContosoInsurance.Data\UserRepository.cs</span></td><td><span class="position">Line 23, Col 33</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\UserRepository.cs">ContosoInsurance.Data\UserRepository.cs</span></td><td><span class="position">Line 22, Col 19</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\UserRepository.cs">ContosoInsurance.Data\UserRepository.cs</span></td><td><span class="position">Line 22, Col 34</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\UserRepository.cs">ContosoInsurance.Data\UserRepository.cs</span></td><td><span class="position">Line 27, Col 23</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Services\Web.config">ContosoInsurance.Services\Web.config</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Web.config">ContosoInsurance.Web\Web.config</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>System.Data.SqlClient dependency is detected.</p><p>While System.Data.SqlClient will work in Azure, the newer Microsoft.Data.SqlClient package is the primary .NET SQL client moving forward and receiving the latest features. For example, Microsoft.Data.SqlClient easily allows use of Azure Managed Identity from a connection string.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"AppService.Windows":{"effort":3,"severity":"optional"},"AppService.Linux":{"effort":3,"severity":"optional"},"AKS.Linux":{"effort":3,"severity":"optional"},"AKS.Windows":{"effort":3,"severity":"optional"},"ACA":{"effort":3,"severity":"optional"},"AppServiceContainer.Linux":{"effort":3,"severity":"optional"},"AppServiceContainer.Windows":{"effort":3,"severity":"optional"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"optional"}}' data-default-effort="3" data-default-severity="optional" data-rule="Security.0002" onclick="toggleRow('row-cloudreadiness-7', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-7">&#x276F;</button> Connection strings without configuration builders detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-7" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Services\Web.config">ContosoInsurance.Services\Web.config</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Web.config">ContosoInsurance.Web\Web.config</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\App.config">ContosoInsurance.Worker\App.config</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Connection strings without configuration builders detected.  </p><p> Keeping connection strings directly in the app is not the best practice and might introduce security risks, increased maintenance, scalability challenges or compliance standards (such as PCI DSS, GDPR, etc.). </p><p> Instead, it is recommended to use configuration builders to get secrets from secure sources in Azure environment.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"AppService.Windows":{"effort":3,"severity":"optional"},"AppService.Linux":{"effort":3,"severity":"mandatory"},"AKS.Linux":{"effort":3,"severity":"mandatory"},"AKS.Windows":{"effort":3,"severity":"information"},"ACA":{"effort":3,"severity":"mandatory"},"AppServiceContainer.Linux":{"effort":3,"severity":"mandatory"},"AppServiceContainer.Windows":{"effort":3,"severity":"information"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"optional"}}' data-default-effort="3" data-default-severity="optional" data-rule="Runtime.0002" onclick="toggleRow('row-cloudreadiness-8', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-8">&#x276F;</button> Upgrade to newer target framework to get better cloud experience</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-8" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Common\ContosoInsurance.Common.csproj">ContosoInsurance.Common\ContosoInsurance.Common.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ContosoInsurance.Data.csproj">ContosoInsurance.Data\ContosoInsurance.Data.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Services\ContosoInsurance.Services.csproj">ContosoInsurance.Services\ContosoInsurance.Services.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\ContosoInsurance.Web.csproj">ContosoInsurance.Web\ContosoInsurance.Web.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ContosoInsurance.Worker.csproj">ContosoInsurance.Worker\ContosoInsurance.Worker.csproj</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Upgrade to newer target framework to get better cloud experience.</p><p>If you are targeting Managed Instance on Azure App Service, validate on .NET Framework 4.8 or move to .NET 10. Persist any runtime prerequisites via install scripts; test in staging before production.</p><p>While if targeting other Azure compute services:</p><p>Application targeting .NET framework lower than 4.7.1 might missing features that would be needed for some cloud scenarios like scaling or getting secrets from secure external sources.</p><p>Azure App Service runs apps on .NET Framework 4.8 or .NET Framework 3.5. Apps running on on .NET Framework versions older than .NET Framework 4.8 could have potential compatibility issues. It is recommended to test your application running on .NET Framework 4.8. Note that it is not necessary to re-target to .NET Framework 4.8, only to validate that the app correctly runs on that version of .NET Framework.</p><p>In the long term it is also recommended to upgrade your application to latest supported .NET 8+ which would significantly increase performance of your application. Use tools like .NET Upgrade Assistant to help with upgrading your application to newer .NET.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"AppService.Windows":{"effort":1,"severity":"optional"},"AppService.Linux":{"effort":1,"severity":"optional"},"AKS.Linux":{"effort":1,"severity":"optional"},"AKS.Windows":{"effort":1,"severity":"optional"},"ACA":{"effort":1,"severity":"optional"},"AppServiceContainer.Linux":{"effort":1,"severity":"optional"},"AppServiceContainer.Windows":{"effort":1,"severity":"optional"},"AppServiceManagedInstance.Windows":{"effort":1,"severity":"optional"}}' data-default-effort="1" data-default-severity="optional" data-rule="Security.0001" onclick="toggleRow('row-cloudreadiness-9', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-9">&#x276F;</button> MD5/SHA1 usage detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-9" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\UserRepository.cs">ContosoInsurance.Data\UserRepository.cs</span></td><td><span class="position">Line 51, Col 29</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>MD5/SHA1 usage detected. </p><p> Due to collision problems with MD5/SHA1, Microsoft recommends SHA256 or SHA512. </p><p> Consider using the SHA256 class or the SHA512 class instead of the MD5 class. Use MD5 only for compatibility with legacy applications and data.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{"AppService.Windows":{"effort":3,"severity":"optional"},"AppService.Linux":{"effort":3,"severity":"optional"},"AKS.Linux":{"effort":3,"severity":"optional"},"AKS.Windows":{"effort":3,"severity":"optional"},"ACA":{"effort":3,"severity":"optional"},"AppServiceContainer.Linux":{"effort":3,"severity":"optional"},"AppServiceContainer.Windows":{"effort":3,"severity":"optional"},"AppServiceManagedInstance.Windows":{"effort":3,"severity":"mandatory"}}' data-default-effort="3" data-default-severity="optional" data-rule="Security.0003" onclick="toggleRow('row-cloudreadiness-10', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-10">&#x276F;</button> Hardcoded sensitive data detected</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-10" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\UserRepository.cs">ContosoInsurance.Data\UserRepository.cs</span></td><td><span class="position">Line 19, Col 31</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Hardcoded sensitive data detected.</p><p>If you are targeting Managed Instance on Azure App Service, externalize secrets to Key Vault/App Configuration; use managed identity instead of passwords or embedded connection strings.</p><p>While if targeting other Azure compute services:</p><p>Avoid placing sensitive data such as passwords, ids, tokens etc., directly in config files and code since it compromises the security of your application.</p><p>Use Azure App Configuration or Azure KeyVault to store secrets.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+<div class="issue-section" data-domain="dotnet-upgrade">
+  <h2>DotNET Upgrade <a href="scenarios/dotnet-version-upgrade/assessment.html" style="font-size:12px;font-weight:400;margin-left:12px;">View Details</a></h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{}' data-default-effort="1" data-default-severity="mandatory" data-rule="Api.0001" onclick="toggleRow('row-dotnetupgrade-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-0">&#x276F;</button> Binary incompatible for selected .NET version</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Login.aspx.cs">ContosoInsurance.Web\Login.aspx.cs</span></td><td><span class="position">Line 22, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Login.aspx.cs">ContosoInsurance.Web\Login.aspx.cs</span></td><td><span class="position">Line 21, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Login.aspx.cs">ContosoInsurance.Web\Login.aspx.cs</span></td><td><span class="position">Line 8, Col 37</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Upload.aspx.cs">ContosoInsurance.Web\Upload.aspx.cs</span></td><td><span class="position">Line 8, Col 34</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Default.aspx.cs">ContosoInsurance.Web\Default.aspx.cs</span></td><td><span class="position">Line 10, Col 35</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ProjectInstaller.cs">ContosoInsurance.Worker\ProjectInstaller.cs</span></td><td><span class="position">Line 25, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ProjectInstaller.cs">ContosoInsurance.Worker\ProjectInstaller.cs</span></td><td><span class="position">Line 24, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ProjectInstaller.cs">ContosoInsurance.Worker\ProjectInstaller.cs</span></td><td><span class="position">Line 16, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ProjectInstaller.cs">ContosoInsurance.Worker\ProjectInstaller.cs</span></td><td><span class="position">Line 11, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ProjectInstaller.cs">ContosoInsurance.Worker\ProjectInstaller.cs</span></td><td><span class="position">Line 9, Col 8</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ProjectInstaller.cs">ContosoInsurance.Worker\ProjectInstaller.cs</span></td><td><span class="position">Line 7, Col 36</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>API is binary incompatible for selected .NET version: affects existing binaries, often requiring recompilation, because the API has changed in a way that prevents older binaries from loading or executing.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{}' data-default-effort="1" data-default-severity="mandatory" data-rule="Project.0001" onclick="toggleRow('row-dotnetupgrade-1', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-1">&#x276F;</button> Project file needs to be converted to SDK-style</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-1" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Common\ContosoInsurance.Common.csproj">ContosoInsurance.Common\ContosoInsurance.Common.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ContosoInsurance.Data.csproj">ContosoInsurance.Data\ContosoInsurance.Data.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Services\ContosoInsurance.Services.csproj">ContosoInsurance.Services\ContosoInsurance.Services.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\ContosoInsurance.Web.csproj">ContosoInsurance.Web\ContosoInsurance.Web.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ContosoInsurance.Worker.csproj">ContosoInsurance.Worker\ContosoInsurance.Worker.csproj</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Project file needs to be converted to SDK-style. Modern .NET framework projects require a change in the project file format and use SDK corresponding to project flavor and functionality.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{}' data-default-effort="1" data-default-severity="mandatory" data-rule="Project.0002" onclick="toggleRow('row-dotnetupgrade-2', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-2">&#x276F;</button> Project&#39;s target framework(s) needs to be changed</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-2" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Common\ContosoInsurance.Common.csproj">ContosoInsurance.Common\ContosoInsurance.Common.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ContosoInsurance.Data.csproj">ContosoInsurance.Data\ContosoInsurance.Data.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Services\ContosoInsurance.Services.csproj">ContosoInsurance.Services\ContosoInsurance.Services.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\ContosoInsurance.Web.csproj">ContosoInsurance.Web\ContosoInsurance.Web.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ContosoInsurance.Worker.csproj">ContosoInsurance.Worker\ContosoInsurance.Worker.csproj</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Project&#39;s target framework(s) needs to be changed to the new target framework that you selected for this upgrade.</p><p>During upgrade target framework will be adjusted to corresponding platform when applicable. In some cases project would result in multiple target frameworks after the upgrade if it was using features that now have their own platforms in modern .NET frameworks (windows, iOS, Android etc).</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{}' data-default-effort="1" data-default-severity="mandatory" data-rule="Feature.1000" onclick="toggleRow('row-dotnetupgrade-3', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-3">&#x276F;</button> Convert application initialization code from Global.asax.cs to .NET Core and clean up Global.asax.cs</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-3" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Global.asax.cs">ContosoInsurance.Web\Global.asax.cs</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Convert application initialization code from Global.asax.cs to .NET Core and clean up Global.asax.cs.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{}' data-default-effort="2" data-default-severity="mandatory" data-rule="LegacyConfiguration" onclick="toggleRow('row-dotnetupgrade-4', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-4">&#x276F;</button> Legacy Configuration System</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">2</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-4" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Legacy XML-based configuration system (app.config/web.config) that has been replaced by a more flexible configuration model in .NET Core. The old system was rigid and XML-based. Migrate to Microsoft.Extensions.Configuration with JSON/environment variables; use System.Configuration.ConfigurationManager NuGet package as interim bridge if needed.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{}' data-default-effort="1" data-default-severity="mandatory" data-rule="WcfClient" onclick="toggleRow('row-dotnetupgrade-5', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-5">&#x276F;</button> WCF Client APIs</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-5" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>WCF client-side APIs for building service clients that communicate with WCF services. These APIs are available as exact equivalents via NuGet packages - add System.ServiceModel.* NuGet packages (System.ServiceModel.Http, System.ServiceModel.Primitives, System.ServiceModel.NetTcp, etc.)</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{}' data-default-effort="4" data-default-severity="mandatory" data-rule="SystemWeb" onclick="toggleRow('row-dotnetupgrade-6', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-6">&#x276F;</button> ASP.NET Framework (System.Web)</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">4</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-6" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Legacy ASP.NET Framework APIs for web applications (System.Web.*) that don&#39;t exist in ASP.NET Core due to architectural differences. ASP.NET Core represents a complete redesign of the web framework. Migrate to ASP.NET Core equivalents or consider System.Web.Adapters package for compatibility.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{}' data-default-effort="3" data-default-severity="mandatory" data-rule="ConfigurationInstallation" onclick="toggleRow('row-dotnetupgrade-7', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-7">&#x276F;</button> Configuration Installation Components</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-7" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>System.Configuration installer components for deploying applications with custom installation logic that are not available for .NET Core. The installer infrastructure has been removed. Use modern deployment tools like Windows Installer XML (WiX), InstallShield, or platform-specific package managers.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="potential" data-targets='{}' data-default-effort="1" data-default-severity="potential" data-rule="Api.0002" onclick="toggleRow('row-dotnetupgrade-8', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-8">&#x276F;</button> Source incompatible for selected .NET version</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-potential"></span>Potential</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-8" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Common\Config\ConfigHelper.cs">ContosoInsurance.Common\Config\ConfigHelper.cs</span></td><td><span class="position">Line 22, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Common\Config\ConfigHelper.cs">ContosoInsurance.Common\Config\ConfigHelper.cs</span></td><td><span class="position">Line 20, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Common\Config\ConfigHelper.cs">ContosoInsurance.Common\Config\ConfigHelper.cs</span></td><td><span class="position">Line 18, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Common\Config\ConfigHelper.cs">ContosoInsurance.Common\Config\ConfigHelper.cs</span></td><td><span class="position">Line 12, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\UserRepository.cs">ContosoInsurance.Data\UserRepository.cs</span></td><td><span class="position">Line 30, Col 20</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\UserRepository.cs">ContosoInsurance.Data\UserRepository.cs</span></td><td><span class="position">Line 29, Col 20</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\UserRepository.cs">ContosoInsurance.Data\UserRepository.cs</span></td><td><span class="position">Line 27, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\UserRepository.cs">ContosoInsurance.Data\UserRepository.cs</span></td><td><span class="position">Line 26, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\UserRepository.cs">ContosoInsurance.Data\UserRepository.cs</span></td><td><span class="position">Line 25, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\UserRepository.cs">ContosoInsurance.Data\UserRepository.cs</span></td><td><span class="position">Line 23, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\UserRepository.cs">ContosoInsurance.Data\UserRepository.cs</span></td><td><span class="position">Line 22, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\PolicyRepository.cs">ContosoInsurance.Data\PolicyRepository.cs</span></td><td><span class="position">Line 25, Col 24</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\PolicyRepository.cs">ContosoInsurance.Data\PolicyRepository.cs</span></td><td><span class="position">Line 23, Col 20</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\PolicyRepository.cs">ContosoInsurance.Data\PolicyRepository.cs</span></td><td><span class="position">Line 21, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\PolicyRepository.cs">ContosoInsurance.Data\PolicyRepository.cs</span></td><td><span class="position">Line 20, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\PolicyRepository.cs">ContosoInsurance.Data\PolicyRepository.cs</span></td><td><span class="position">Line 18, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\PolicyRepository.cs">ContosoInsurance.Data\PolicyRepository.cs</span></td><td><span class="position">Line 17, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 123, Col 8</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 135, Col 28</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 134, Col 28</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 133, Col 28</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 132, Col 28</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 131, Col 42</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 131, Col 28</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 130, Col 28</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 129, Col 41</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 129, Col 28</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 128, Col 28</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 127, Col 28</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 126, Col 39</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 126, Col 28</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 125, Col 39</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 125, Col 28</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 119, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 118, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 117, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 116, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 114, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 113, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 104, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 103, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 102, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 101, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 100, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 99, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 98, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 97, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 96, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 94, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 93, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 80, Col 20</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 78, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 77, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 75, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 74, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 60, Col 20</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 58, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 57, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 56, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 54, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 53, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 43, Col 20</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 41, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 40, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 39, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 37, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ClaimsRepository.cs">ContosoInsurance.Data\ClaimsRepository.cs</span></td><td><span class="position">Line 36, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Services\IClaimScoringService.cs">ContosoInsurance.Services\IClaimScoringService.cs</span></td><td><span class="position">Line 4, Col 5</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Services\IClaimScoringService.cs">ContosoInsurance.Services\IClaimScoringService.cs</span></td><td><span class="position">Line 10, Col 9</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Services\IClaimScoringService.cs">ContosoInsurance.Services\IClaimScoringService.cs</span></td><td><span class="position">Line 7, Col 9</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Login.aspx.cs">ContosoInsurance.Web\Login.aspx.cs</span></td><td><span class="position">Line 22, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Default.aspx.cs">ContosoInsurance.Web\Default.aspx.cs</span></td><td><span class="position">Line 51, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Default.aspx.cs">ContosoInsurance.Web\Default.aspx.cs</span></td><td><span class="position">Line 50, Col 16</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Default.aspx.cs">ContosoInsurance.Web\Default.aspx.cs</span></td><td><span class="position">Line 41, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Default.aspx.cs">ContosoInsurance.Web\Default.aspx.cs</span></td><td><span class="position">Line 40, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Global.asax.cs">ContosoInsurance.Web\Global.asax.cs</span></td><td><span class="position">Line 16, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\Global.asax.cs">ContosoInsurance.Web\Global.asax.cs</span></td><td><span class="position">Line 6, Col 26</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ProjectInstaller.cs">ContosoInsurance.Worker\ProjectInstaller.cs</span></td><td><span class="position">Line 16, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\Program.cs">ContosoInsurance.Worker\Program.cs</span></td><td><span class="position">Line 8, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ClaimsExporterService.cs">ContosoInsurance.Worker\ClaimsExporterService.cs</span></td><td><span class="position">Line 30, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ClaimsExporterService.cs">ContosoInsurance.Worker\ClaimsExporterService.cs</span></td><td><span class="position">Line 21, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ClaimsExporterService.cs">ContosoInsurance.Worker\ClaimsExporterService.cs</span></td><td><span class="position">Line 20, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ClaimsExporterService.cs">ContosoInsurance.Worker\ClaimsExporterService.cs</span></td><td><span class="position">Line 19, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ClaimsExporterService.cs">ContosoInsurance.Worker\ClaimsExporterService.cs</span></td><td><span class="position">Line 18, Col 12</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ClaimsExporterService.cs">ContosoInsurance.Worker\ClaimsExporterService.cs</span></td><td><span class="position">Line 16, Col 8</span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ClaimsExporterService.cs">ContosoInsurance.Worker\ClaimsExporterService.cs</span></td><td><span class="position">Line 12, Col 41</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>API is source incompatible for selected .NET version: requires code changes to compile successfully when targeting a new version, such as removing obsolete APIs or changing method signatures.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="potential" data-targets='{}' data-default-effort="1" data-default-severity="potential" data-rule="Binding.0004" onclick="toggleRow('row-dotnetupgrade-9', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-9">&#x276F;</button> AutoGenerateBindingRedirects not set and no manual redirects</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-potential"></span>Potential</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-9" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Common\ContosoInsurance.Common.csproj">ContosoInsurance.Common\ContosoInsurance.Common.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Data\ContosoInsurance.Data.csproj">ContosoInsurance.Data\ContosoInsurance.Data.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Services\ContosoInsurance.Services.csproj">ContosoInsurance.Services\ContosoInsurance.Services.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\ContosoInsurance.Web.csproj">ContosoInsurance.Web\ContosoInsurance.Web.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Worker\ContosoInsurance.Worker.csproj">ContosoInsurance.Worker\ContosoInsurance.Worker.csproj</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>AutoGenerateBindingRedirects is not set and no manual binding redirects were found. In some project types the default is false, leading to unpredictable behavior across different build environments or developer machines.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="potential" data-targets='{}' data-default-effort="1" data-default-severity="potential" data-rule="NuGet.0002" onclick="toggleRow('row-dotnetupgrade-10', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-10">&#x276F;</button> NuGet package upgrade is recommended</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-potential"></span>Potential</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-10" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Common\ContosoInsurance.Common.csproj">ContosoInsurance.Common\ContosoInsurance.Common.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\ContosoInsurance.Web.csproj">ContosoInsurance.Web\ContosoInsurance.Web.csproj</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>NuGet package upgrade is recommended for selected target framework.</p><p>Standard .NET packages are recommended to have versions matching version of .NET that project targets.</p><p>Some other packages also are known to work better for selected target frameworks.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{}' data-default-effort="1" data-default-severity="optional" data-rule="NuGet.0004" onclick="toggleRow('row-dotnetupgrade-11', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-dotnetupgrade-11">&#x276F;</button> NuGet package contains security vulnerability</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">1</td>
+    </tr>
+    <tr class="detail-row" id="row-dotnetupgrade-11" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="ContosoInsurance.Common\ContosoInsurance.Common.csproj">ContosoInsurance.Common\ContosoInsurance.Common.csproj</span></td><td><span class="position"></span></td></tr>
+            <tr><td><span class="file-path" title="ContosoInsurance.Web\ContosoInsurance.Web.csproj">ContosoInsurance.Web\ContosoInsurance.Web.csproj</span></td><td><span class="position"></span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>NuGet package contains security vulnerabilities.</p><p>Package needs to be upgraded to a newer version that addresses known security vulnerabilities.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+</div><!-- #tab-issues -->
+<div id="tab-arch" class="tab-panel">
+  <div class="fact-content"><h1 id="architecture-diagram">Architecture Diagram</h1>
+<p>ContosoInsurance is a multi-project .NET Framework 4.6.1 solution providing insurance claims management via an ASP.NET Web Forms front end, a WCF scoring service, a Windows Service background worker, and a shared ADO.NET data access layer backed by SQL Server.</p>
+<h2 id="application-architecture">Application Architecture</h2>
+<div class="mermaid">
+flowchart TD
+    subgraph Client["Client Layer"]
+        Browser["Web Browser"]
+    end
+
+    subgraph Web["Presentation Layer - ASP.NET Web Forms 4.6.1"]
+        LoginPage["Login.aspx\n(Forms Auth)"]
+        DefaultPage["Default.aspx\n(Claims Dashboard)"]
+        UploadPage["Upload.aspx\n(Document Upload)"]
+    end
+
+    subgraph WCF["Service Layer - WCF SOAP Service"]
+        ScoringService["ClaimScoringService.svc\n(Claim Scoring)"]
+    end
+
+    subgraph Worker["Background Worker - Windows Service"]
+        ExporterService["ClaimsExporterService\n(Scheduled CSV Export)"]
+    end
+
+    subgraph Data["Data Access Layer - ADO.NET"]
+        ClaimsRepo["ClaimsRepository"]
+        PolicyRepo["PolicyRepository"]
+        UserRepo["UserRepository"]
+    end
+
+    subgraph Common["Cross-Cutting - Common Library"]
+        ConfigHelper["ConfigHelper\n(System.Configuration)"]
+        AppLogger["AppLogger\n(log4net)"]
+    end
+
+    subgraph Storage["Data Storage"]
+        SqlServer[("SQL Server\nContosoInsurance DB")]
+        FileSystem[("File System\nC:\\ClaimsFiles")]
+        ExportFS[("File System\nC:\\Exports")]
+        Logs[("Log Files\nC:\\Logs")]
+    end
+
+    Browser -->|"HTTP requests"| Web
+    LoginPage -->|"authenticate"| UserRepo
+    DefaultPage -->|"load claims"| ClaimsRepo
+    DefaultPage -->|"BasicHttpBinding SOAP"| ScoringService
+    UploadPage -->|"write document"| FileSystem
+    ScoringService -->|"read claim"| ClaimsRepo
+    ExporterService -->|"read claims"| ClaimsRepo
+    ExporterService -->|"write CSV"| ExportFS
+    ClaimsRepo -->|"ADO.NET SQL"| SqlServer
+    PolicyRepo -->|"ADO.NET SQL"| SqlServer
+    UserRepo -->|"ADO.NET SQL"| SqlServer
+    Common -.->|"used by all modules"| Web
+    Common -.->|"used by all modules"| WCF
+    Common -.->|"used by all modules"| Worker
+    Common -.->|"used by all modules"| Data
+    AppLogger -->|"writes"| Logs
+</div>
+<h3 id="technology-stack-summary">Technology Stack Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Layer</th><th>Technology</th><th>Version</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>Presentation</td><td>ASP.NET Web Forms</td><td>4.6.1</td><td>Server-side web UI (ASPX code-behind pages)</td></tr>
+<tr><td>Authentication</td><td>Forms Authentication</td><td>4.6.1</td><td>Cookie-based session authentication</td></tr>
+<tr><td>Service</td><td>WCF (Windows Communication Foundation)</td><td>4.6.1</td><td>SOAP-based claim scoring service</td></tr>
+<tr><td>Background Processing</td><td>Windows Service (System.ServiceProcess)</td><td>4.6.1</td><td>Scheduled claims CSV export</td></tr>
+<tr><td>Data Access</td><td>ADO.NET (System.Data.SqlClient)</td><td>4.6.1</td><td>Raw SQL queries against SQL Server</td></tr>
+<tr><td>Data Storage</td><td>SQL Server</td><td>Not specified</td><td>Relational storage for Claims, Policies, Users</td></tr>
+<tr><td>Configuration</td><td>System.Configuration (Web.config/App.config)</td><td>4.6.1</td><td>Application settings and connection strings</td></tr>
+<tr><td>Logging</td><td>log4net</td><td>2.0.8</td><td>Rolling file-based application logging</td></tr>
+<tr><td>Serialization</td><td>Newtonsoft.Json</td><td>11.0.2</td><td>JSON serialization (Common/Web)</td></tr>
+<tr><td>Cross-cutting</td><td>ContosoInsurance.Common</td><td>1.0</td><td>Shared config and logging utilities</td></tr>
+</tbody></table></div>
+<h3 id="data-storage-external-services">Data Storage &amp; External Services</h3>
+<p>The application uses a single SQL Server database (<code>ContosoInsurance</code>) accessed exclusively through raw ADO.NET in the <code>ContosoInsurance.Data</code> project. There is no ORM or query abstraction layer. The file system serves as a document store: uploaded claim documents are persisted to a configurable local path (<code>C:\ClaimsFiles</code> by default) and the background worker writes scheduled CSV exports to <code>C:\Exports</code>. Log files are written by log4net to <code>C:\Logs</code>. The WCF scoring service is called over <code>BasicHttpBinding</code> from the web layer using a hard-coded endpoint URL defined in <code>Web.config</code>.</p>
+<h3 id="key-architectural-decisions">Key Architectural Decisions</h3>
+<ul>
+<li><strong>Repository pattern without abstraction interfaces</strong>: Each data entity (Claim, Policy, User) has a dedicated repository class using raw ADO.NET; no interface or DI container is used, so repositories are instantiated directly with <code>new</code>.</li>
+<li><strong>WCF SOAP for inter-service communication</strong>: The web front end invokes claim scoring synchronously on every page load via a <code>ChannelFactory&lt;IClaimScoringService&gt;</code>, coupling the web tier to an external SOAP endpoint at request time.</li>
+<li><strong>Windows Service for background jobs</strong>: Periodic export work is hosted in a traditional <code>ServiceBase</code> Windows Service with a <code>System.Timers.Timer</code>, rather than a modern hosted service or task scheduler.</li>
+</ul>
+<h2 id="component-relationships">Component Relationships</h2>
+<div class="mermaid">
+flowchart LR
+    subgraph Presentation["Presentation (ContosoInsurance.Web)"]
+        LoginPage["LoginPage\n(Login.aspx)"]
+        DefaultPage["DefaultPage\n(Default.aspx)"]
+        UploadPage["UploadPage\n(Upload.aspx)"]
+    end
+
+    subgraph ServiceLayer["Service Layer (ContosoInsurance.Services)"]
+        IScoring["IClaimScoringService\n(WCF Contract)"]
+        ScoringImpl["ClaimScoringService\n(WCF Implementation)"]
+    end
+
+    subgraph BackgroundWorker["Background Worker (ContosoInsurance.Worker)"]
+        Exporter["ClaimsExporterService\n(Windows Service)"]
+        Program["Program\n(Service Host)"]
+    end
+
+    subgraph DataAccess["Data Access (ContosoInsurance.Data)"]
+        ClaimsRepo["ClaimsRepository"]
+        PolicyRepo["PolicyRepository"]
+        UserRepo["UserRepository"]
+        ClaimModel["Claim (Model)"]
+        PolicyModel["Policy (Model)"]
+        UserModel["User (Model)"]
+    end
+
+    subgraph Infrastructure["Infrastructure (ContosoInsurance.Common)"]
+        ConfigHelper["ConfigHelper"]
+        AppLogger["AppLogger"]
+    end
+
+    LoginPage -->|"delegates auth"| UserRepo
+    DefaultPage -->|"loads claims"| ClaimsRepo
+    DefaultPage -->|"SOAP call via ChannelFactory"| IScoring
+    IScoring -->|"implemented by"| ScoringImpl
+    ScoringImpl -->|"reads claim"| ClaimsRepo
+    UploadPage -->|"reads config"| ConfigHelper
+    Exporter -->|"reads claims"| ClaimsRepo
+    Program -->|"hosts"| Exporter
+    ClaimsRepo -->|"maps to"| ClaimModel
+    PolicyRepo -->|"maps to"| PolicyModel
+    UserRepo -->|"maps to"| UserModel
+    ClaimsRepo -->|"reads config"| ConfigHelper
+    PolicyRepo -->|"reads config"| ConfigHelper
+    UserRepo -->|"reads config"| ConfigHelper
+    ScoringImpl -->|"reads config"| ConfigHelper
+    Exporter -->|"reads config"| ConfigHelper
+    LoginPage -.->|"logs via"| AppLogger
+    DefaultPage -.->|"logs via"| AppLogger
+    UploadPage -.->|"logs via"| AppLogger
+    ScoringImpl -.->|"logs via"| AppLogger
+    Exporter -.->|"logs via"| AppLogger
+    ClaimsRepo -.->|"logs via"| AppLogger
+</div>
+<h3 id="component-inventory">Component Inventory</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Layer</th><th>Type</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td>LoginPage (Login.aspx)</td><td>Presentation</td><td>ASP.NET Web Forms Page</td><td>Handles user login via Forms Authentication; delegates credential check to UserRepository</td></tr>
+<tr><td>DefaultPage (Default.aspx)</td><td>Presentation</td><td>ASP.NET Web Forms Page</td><td>Displays recent claims dashboard; triggers WCF scoring for un-scored claims on page load</td></tr>
+<tr><td>UploadPage (Upload.aspx)</td><td>Presentation</td><td>ASP.NET Web Forms Page</td><td>Accepts claim document file uploads and saves them to the configured local file path</td></tr>
+<tr><td>IClaimScoringService</td><td>Service Layer</td><td>WCF Service Contract</td><td>Defines the SOAP service contract for scoring a claim by ID</td></tr>
+<tr><td>ClaimScoringService</td><td>Service Layer</td><td>WCF Service Implementation</td><td>Implements rule-based claim scoring logic; reads claims from the database via ClaimsRepository</td></tr>
+<tr><td>ClaimsExporterService</td><td>Background Worker</td><td>Windows Service (ServiceBase)</td><td>Runs on a configurable timer to export recent claims to a CSV file on the local file system</td></tr>
+<tr><td>Program</td><td>Background Worker</td><td>Console/Service Entry Point</td><td>Hosts ClaimsExporterService as a Windows Service or console app</td></tr>
+<tr><td>ClaimsRepository</td><td>Data Access</td><td>Repository</td><td>Provides CRUD and search operations on the Claims table using raw ADO.NET; includes intentional SQL injection vulnerability in SearchByClaimant</td></tr>
+<tr><td>PolicyRepository</td><td>Data Access</td><td>Repository</td><td>Reads all policies from the Policies table using raw ADO.NET</td></tr>
+<tr><td>UserRepository</td><td>Data Access</td><td>Repository</td><td>Looks up users and verifies passwords (SHA-1 + salt) against the Users table</td></tr>
+<tr><td>Claim</td><td>Data Access</td><td>Domain Model</td><td>Represents a single insurance claim entity</td></tr>
+<tr><td>Policy</td><td>Data Access</td><td>Domain Model</td><td>Represents an insurance policy entity</td></tr>
+<tr><td>User</td><td>Data Access</td><td>Domain Model</td><td>Represents an application user with role and password hash</td></tr>
+<tr><td>ConfigHelper</td><td>Infrastructure</td><td>Static Utility</td><td>Reads AppSettings and ConnectionStrings from Web.config/App.config at call time</td></tr>
+<tr><td>AppLogger</td><td>Infrastructure</td><td>Static Utility</td><td>Wraps log4net with Info/Warn/Error convenience methods; also writes to System.Diagnostics.Trace</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-api" class="tab-panel">
+  <div class="fact-content"><h1 id="api-service-communication-contracts">API &amp; Service Communication Contracts</h1>
+<p>The ContosoInsurance solution exposes a server-rendered ASP.NET WebForms UI (3 pages) and a WCF/SOAP service (2 operations); there are no REST or HTTP API endpoints. Inter-service communication is exclusively synchronous SOAP over BasicHttpBinding.</p>
+<h2 id="service-catalog">Service Catalog</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Port</th><th>Category</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>ContosoInsurance.Web</td><td>80 (IIS, HTTP)</td><td>API Layer</td><td>ASP.NET WebForms claims portal — login, claims dashboard, document upload</td></tr>
+<tr><td>ContosoInsurance.Services</td><td>8080 (HTTP, IIS)</td><td>Business</td><td>WCF SOAP service that scores insurance claims using deterministic weighted rules</td></tr>
+<tr><td>ContosoInsurance.Worker</td><td>N/A (Windows Service)</td><td>Infrastructure</td><td>Timer-driven Windows Service that exports recent claims to a local CSV file on a configurable interval</td></tr>
+<tr><td>ContosoInsurance.Data</td><td>N/A (shared library)</td><td>Infrastructure</td><td>ADO.NET data access layer; not independently deployable — referenced by Web, Services, and Worker</td></tr>
+<tr><td>ContosoInsurance.Common</td><td>N/A (shared library)</td><td>Infrastructure</td><td>Shared utilities: ConfigHelper (appSettings/connectionStrings wrapper) and AppLogger (log4net facade)</td></tr>
+</tbody></table></div>
+<h2 id="api-endpoints-inventory">API Endpoints Inventory</h2>
+<p>This application does not expose REST endpoints. The two interactive surfaces are:</p>
+<h3 id="aspnet-webforms-pages-contosoinsuranceweb">ASP.NET WebForms Pages (ContosoInsurance.Web)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Page</th><th>HTTP Method</th><th>Path</th><th>Request Type</th><th>Response Type</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Claims Dashboard</td><td>GET / POST</td><td><code>/Default.aspx</code></td><td>Page load (GET) / form postback (POST)</td><td>Server-rendered HTML</td><td>Fetches recent 50 claims and triggers synchronous WCF scoring for any un-scored claims on load</td></tr>
+<tr><td>Login</td><td>GET / POST</td><td><code>/Login.aspx</code></td><td>GET (form) / POST <code>UsernameBox</code>, <code>PasswordBox</code></td><td>Redirect or re-render with error</td><td>Issues Forms Authentication cookie on success</td></tr>
+<tr><td>Document Upload</td><td>GET / POST</td><td><code>/Upload.aspx</code></td><td>GET (form) / POST multipart <code>ClaimIdBox</code> + file</td><td>Server-rendered status message</td><td>Saves file to local filesystem path; max 10 MB</td></tr>
+</tbody></table></div>
+<h3 id="wcf-soap-operations-contosoinsuranceservices">WCF SOAP Operations (ContosoInsurance.Services)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Operation</th><th>Binding</th><th>Endpoint</th><th>Request Type</th><th>Response Type</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>ScoreClaim</code></td><td>BasicHttpBinding</td><td><code>/ClaimScoringService.svc</code></td><td><code>int claimId</code></td><td><code>int</code> (score 0–1000)</td><td>Returns -1 if claim not found</td></tr>
+<tr><td><code>GetModelVersion</code></td><td>BasicHttpBinding</td><td><code>/ClaimScoringService.svc</code></td><td>_(none)_</td><td><code>string</code></td><td>Returns value of <code>ScoringModelVersion</code> app setting</td></tr>
+</tbody></table></div>
+<h2 id="management-observability-endpoints">Management &amp; Observability Endpoints</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Endpoint</th><th>Custom Metrics</th></tr></thead><tbody>
+<tr><td>ContosoInsurance.Web</td><td>None — no health check or metrics endpoint exposed</td><td>None; log4net rolling file appender only</td></tr>
+<tr><td>ContosoInsurance.Services</td><td><code>?wsdl</code> (auto-generated WSDL via <code>serviceMetadata httpGetEnabled=&quot;true&quot;</code>)</td><td>None</td></tr>
+<tr><td>ContosoInsurance.Worker</td><td>None</td><td>None; log4net rolling file appender only</td></tr>
+</tbody></table></div>
+<p>&gt; Note: No health check endpoints, no Swagger/OpenAPI, no Prometheus or Application Insights instrumentation exists in any service.</p>
+<h2 id="dtos-contracts">DTOs &amp; Contracts</h2>
+<p><strong>Service-level domain models</strong> (all owned by <code>ContosoInsurance.Data</code>; field details in <code>data-architecture.md</code>):</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Class</th><th>API Role</th><th>Immutability</th></tr></thead><tbody>
+<tr><td><code>Claim</code></td><td>Read/write entity passed between Data, Web, Services, and Worker</td><td>Mutable POCO (no immutability construct)</td></tr>
+<tr><td><code>Policy</code></td><td>Read-only in current flows; returned by <code>PolicyRepository.GetAll()</code></td><td>Mutable POCO</td></tr>
+<tr><td><code>User</code></td><td>Internal authentication model; not exposed externally</td><td>Mutable POCO</td></tr>
+</tbody></table></div>
+<p><strong>WCF contract</strong> (ContosoInsurance.Services):</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Interface</th><th>Role</th></tr></thead><tbody>
+<tr><td><code>IClaimScoringService</code></td><td>WCF <code>[ServiceContract]</code> defining the SOAP interface; primitive types only (<code>int</code>, <code>string</code>) — no complex DTO</td></tr>
+</tbody></table></div>
+<p>There are no OpenAPI/Swagger specifications, no protobuf schemas, and no GraphQL schemas. Serialization is handled entirely by the WCF DataContractSerializer (SOAP envelope) and ASP.NET WebForms ViewState for the web layer.</p>
+<h2 id="communication-patterns">Communication Patterns</h2>
+<h3 id="synchronous-communication">Synchronous Communication</h3>
+<ul>
+<li><strong>Web → WCF Service (SOAP/BasicHttpBinding)</strong>: <code>Default.aspx</code> calls <code>ClaimScoringService.svc</code> synchronously during page load for every un-scored claim. A <code>ChannelFactory&lt;IClaimScoringService&gt;</code> is created, used, and torn down per call. The service endpoint is read from <code>appSettings[&quot;ClaimScoringEndpoint&quot;]</code> (default: <code>http://localhost:8080/ClaimScoringService.svc</code>). No connection pooling or channel reuse.</li>
+<li><strong>Web / Services / Worker → SQL Server (ADO.NET)</strong>: All three deployable components open <code>SqlConnection</code> directly using a hardcoded connection string from <code>appSettings</code>. All database calls are synchronous (no <code>async</code>/<code>await</code>).</li>
+</ul>
+<h3 id="asynchronous-communication">Asynchronous Communication</h3>
+<p>None. There is no message broker, event bus, or queue of any kind.</p>
+<h3 id="resilience-patterns">Resilience Patterns</h3>
+<ul>
+<li><strong>No circuit breaker</strong> is configured. A WCF call failure is caught with a bare <code>try/catch</code> in <code>Default.aspx.cs</code>; on exception, the error is logged and the claim is left un-scored.</li>
+<li><strong>No retry policy</strong> is implemented anywhere in the solution.</li>
+<li><strong>No timeout</strong> is explicitly configured for the WCF <code>BasicHttpBinding</code> (default send/receive timeout is 1 minute).</li>
+<li><strong>No bulkhead</strong> or rate-limiting exists.</li>
+</ul>
+<h3 id="service-discovery">Service Discovery</h3>
+<p>Services communicate via hardcoded URLs read from configuration files. There is no service discovery mechanism (no Eureka, Consul, or Kubernetes DNS). The WCF endpoint address is a static app setting.</p>
+<h3 id="api-gateway">API Gateway</h3>
+<p>None. There is no API gateway layer.</p>
+<h3 id="startup-dependency-chain">Startup Dependency Chain</h3>
+<p>The Worker and Web projects assume SQL Server and the WCF service are already running. No startup probes or readiness checks are implemented.</p>
+<h3 id="security-posture">Security Posture</h3>
+<ul>
+<li><strong>Authentication</strong>: Forms Authentication is enabled on <code>ContosoInsurance.Web</code>. All pages deny anonymous access except <code>Login.aspx</code>. The WCF service (<code>ContosoInsurance.Services</code>) has <strong>no authentication</strong> configured — it is publicly accessible to any caller that can reach port 8080.</li>
+<li><strong>Authorization</strong>: Role information (<code>Agent</code>, <code>Adjuster</code>, <code>Admin</code>) is stored in the <code>Users</code> table but is <strong>not enforced</strong> by any page-level or operation-level check in the current code.</li>
+<li><strong>Transport security</strong>: <strong>No HTTPS/TLS is configured</strong> in any service. All traffic (browser ↔ Web, Web ↔ WCF, Worker ↔ SQL Server) travels over plain HTTP and unencrypted TCP.</li>
+<li><strong>Password storage</strong>: SHA1 + per-user salt (weak KDF) — not a transport concern but noted for completeness.</li>
+</ul>
+<h2 id="service-technology-matrix">Service Technology Matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Web Framework</th><th>Data Access</th><th>Discovery</th><th>Gateway</th><th>Health Checks</th><th>Cache</th><th>Metrics</th></tr></thead><tbody>
+<tr><td>ContosoInsurance.Web</td><td>ASP.NET WebForms 4.6.1</td><td>ADO.NET (SqlConnection)</td><td>None (hardcoded URL)</td><td>None</td><td>None</td><td>None</td><td>None</td></tr>
+<tr><td>ContosoInsurance.Services</td><td>WCF / BasicHttpBinding 4.6.1</td><td>ADO.NET (SqlConnection)</td><td>None</td><td>None</td><td>None</td><td>None</td><td>None</td></tr>
+<tr><td>ContosoInsurance.Worker</td><td>Windows Service (ServiceBase)</td><td>ADO.NET (SqlConnection)</td><td>None</td><td>None</td><td>None</td><td>None</td><td>None</td></tr>
+<tr><td>ContosoInsurance.Data</td><td>N/A (library)</td><td>ADO.NET (SqlConnection)</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td></tr>
+<tr><td>ContosoInsurance.Common</td><td>N/A (library)</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td></tr>
+</tbody></table></div>
+<h2 id="service-communication-sequence">Service Communication Sequence</h2>
+<p>The primary runtime flow is a user loading the claims dashboard (<code>Default.aspx</code>), which triggers synchronous WCF scoring calls for any un-scored claims before rendering.</p>
+<div class="mermaid">
+sequenceDiagram
+    participant Browser as "Browser"
+    participant Web as "ContosoInsurance.Web (IIS)"
+    participant WCF as "ContosoInsurance.Services (WCF)"
+    participant DB as "SQL Server (ContosoDb)"
+    participant FS as "File System"
+
+    Browser->>Web: GET /Default.aspx (Forms Auth cookie)
+    Web->>DB: SELECT TOP 50 Claims ORDER BY FiledOn DESC
+    DB-->>Web: List of Claim rows
+
+    loop For each un-scored claim
+        Web->>WCF: SOAP ScoreClaim(claimId) via BasicHttpBinding
+        WCF->>DB: SELECT Claim WHERE ClaimId = @Id
+        DB-->>WCF: Claim row
+        WCF-->>WCF: Apply weighted scoring rules
+        WCF-->>Web: int score (0-1000)
+        Web->>DB: UPDATE Claims SET Score = @Score
+        alt WCF call fails
+            Web-->>Web: catch Exception, log error, skip score update
+        end
+    end
+
+    Web-->>Browser: Render HTML claims grid
+
+    Browser->>Web: GET /Upload.aspx
+    Browser->>Web: POST /Upload.aspx (multipart: ClaimIdBox + file)
+    Web-->>Web: Validate file size (max 10 MB)
+    Web->>FS: SaveAs C:\ClaimsFiles\{claimId}\{filename}
+    Web-->>Browser: Render upload status
+
+    note over Web,WCF: Worker runs independently on a configurable timer
+    participant Worker as "ContosoInsurance.Worker (Windows Service)"
+    Worker->>DB: SELECT TOP 1000 Claims ORDER BY FiledOn DESC
+    DB-->>Worker: Claim rows
+    Worker->>FS: Write claims-{timestamp}.csv to C:\Exports
+</div>
+</div>
+</div>
+<div id="tab-config" class="tab-panel">
+  <div class="fact-content"><h1 id="configuration-externalized-settings-inventory">Configuration &amp; Externalized Settings Inventory</h1>
+<p>The solution uses three static XML configuration files (<code>Web.config</code> &#215; 2, <code>App.config</code> &#215; 1) with no environment-specific overrides, no secret store integration, and no runtime profile system — all settings, including plaintext database credentials, are baked directly into source-controlled files.</p>
+<h2 id="configuration-sources">Configuration Sources</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Source</th><th>Type</th><th>Path / Location</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>Web.config</code></td><td>XML / ASP.NET</td><td><code>ContosoInsurance.Web/Web.config</code></td><td>App settings, connection string, Forms auth, log4net, machineKey</td></tr>
+<tr><td><code>Web.config</code></td><td>XML / WCF</td><td><code>ContosoInsurance.Services/Web.config</code></td><td>App settings, connection string, WCF service model</td></tr>
+<tr><td><code>App.config</code></td><td>XML / .NET Console/Service</td><td><code>ContosoInsurance.Worker/App.config</code></td><td>App settings, connection string, log4net, supported runtime</td></tr>
+<tr><td><code>packages.config</code> &#215; 4</td><td>NuGet package manifest</td><td><code>*/packages.config</code></td><td>NuGet package pinning for Web, Services, Worker, Common</td></tr>
+<tr><td><code>*.csproj</code></td><td>MSBuild project files</td><td><code><em>/ContosoInsurance.</em>.csproj</code></td><td>Build configurations (Debug / Release), target framework declaration</td></tr>
+</tbody></table></div>
+<p>&gt; Note: No <code>appsettings.json</code>, <code>launchSettings.json</code>, Docker Compose, Kubernetes ConfigMaps, cloud config server, or secret store references were found.</p>
+<hr/>
+<h2 id="build-profiles">Build Profiles</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation</th><th>Purpose</th><th>Key Symbols / Settings</th></tr></thead><tbody>
+<tr><td><strong>Debug</strong></td><td>Default (<code>$(Configuration) == &#39;&#39;</code>)</td><td>Development — full debug info, no optimization</td><td><code>DEBUG;TRACE</code>, <code>&lt;DebugType&gt;full&lt;/DebugType&gt;</code>, <code>&lt;Optimize&gt;false&lt;/Optimize&gt;</code></td></tr>
+<tr><td><strong>Release</strong></td><td>Manual <code>-p:Configuration=Release</code></td><td>Production deployment — optimized, PDB only</td><td><code>TRACE</code>, <code>&lt;DebugType&gt;pdbonly&lt;/DebugType&gt;</code>, <code>&lt;Optimize&gt;true&lt;/Optimize&gt;</code></td></tr>
+</tbody></table></div>
+<p>All five projects share the same two-profile model. No Maven/Gradle profiles, npm build scripts, webpack environments, or conditional compilation plugins are present.</p>
+<hr/>
+<h2 id="runtime-profiles">Runtime Profiles</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation Method</th><th>Config Files</th><th>Key Overrides</th></tr></thead><tbody>
+<tr><td><em>(single static profile)</em></td><td>N/A — no environment-specific transforms</td><td><code>Web.config</code> / <code>App.config</code></td><td>None — all environments share identical configuration</td></tr>
+</tbody></table></div>
+<p>&gt; Note: No <code>Web.{Environment}.config</code> transforms, <code>ASPNETCORE_ENVIRONMENT</code> variable, or <code>Web.Debug.config</code> / <code>Web.Release.config</code> XDT transforms were found. The solution predates the ASP.NET Core multi-environment model and relies on manual file edits per deployment target.</p>
+<hr/>
+<h2 id="properties-inventory">Properties Inventory</h2>
+<h3 id="contosoinsuranceweb-webconfig">ContosoInsurance.Web (<code>Web.config</code>)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key</th><th>Default Value</th><th>Profile / Source</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>ClaimDocumentsRoot</code></td><td><code>C:\ClaimsFiles</code></td><td>Static — <code>&lt;appSettings&gt;</code></td><td>Hard-coded UNC-style local path</td></tr>
+<tr><td><code>MaxUploadBytes</code></td><td><code>10485760</code> (10 MB)</td><td>Static — <code>&lt;appSettings&gt;</code></td><td>Also enforced via <code>&lt;requestLimits maxAllowedContentLength&gt;</code></td></tr>
+<tr><td><code>ClaimScoringEndpoint</code></td><td><code>http://localhost:8080/ClaimScoringService.svc</code></td><td>Static — <code>&lt;appSettings&gt;</code></td><td>WCF SOAP endpoint; localhost-only</td></tr>
+<tr><td><code>ContosoDb</code> (connection string)</td><td><code>Server=.;Database=ContosoInsurance;User Id=contoso_app;Password=[MASKED];MultipleActiveResultSets=True;</code></td><td>Static — <code>&lt;connectionStrings&gt;</code></td><td>SQL auth with plaintext password</td></tr>
+<tr><td><code>compilation/@debug</code></td><td><code>true</code></td><td>Static — <code>&lt;system.web&gt;</code></td><td>Should be <code>false</code> in production</td></tr>
+<tr><td><code>compilation/@targetFramework</code></td><td><code>4.6.1</code></td><td>Static — <code>&lt;system.web&gt;</code></td><td></td></tr>
+<tr><td><code>httpRuntime/@targetFramework</code></td><td><code>4.6.1</code></td><td>Static — <code>&lt;system.web&gt;</code></td><td></td></tr>
+<tr><td><code>httpRuntime/@maxRequestLength</code></td><td><code>10240</code> (KB = 10 MB)</td><td>Static — <code>&lt;system.web&gt;</code></td><td>Paired with <code>MaxUploadBytes</code> app setting</td></tr>
+<tr><td><code>authentication/@mode</code></td><td><code>Forms</code></td><td>Static — <code>&lt;system.web&gt;</code></td><td></td></tr>
+<tr><td><code>forms/@loginUrl</code></td><td><code>~/Login.aspx</code></td><td>Static</td><td></td></tr>
+<tr><td><code>forms/@timeout</code></td><td><code>60</code> (minutes)</td><td>Static</td><td>Session idle timeout</td></tr>
+<tr><td><code>forms/@defaultUrl</code></td><td><code>~/Default.aspx</code></td><td>Static</td><td></td></tr>
+<tr><td><code>sessionState/@mode</code></td><td><code>InProc</code></td><td>Static — <code>&lt;system.web&gt;</code></td><td>Not suitable for multi-instance deployments</td></tr>
+<tr><td><code>sessionState/@timeout</code></td><td><code>60</code> (minutes)</td><td>Static</td><td></td></tr>
+<tr><td><code>customErrors/@mode</code></td><td><code>Off</code></td><td>Static — <code>&lt;system.web&gt;</code></td><td>Exposes error details; unsafe for production</td></tr>
+<tr><td><code>machineKey/@validationKey</code></td><td><code>AutoGenerate,IsolateApps</code></td><td>Static</td><td>SHA1 validation — weak algorithm</td></tr>
+<tr><td><code>machineKey/@decryptionKey</code></td><td><code>AutoGenerate,IsolateApps</code></td><td>Static</td><td></td></tr>
+<tr><td><code>machineKey/@validation</code></td><td><code>SHA1</code></td><td>Static</td><td></td></tr>
+<tr><td><code>log4net/FileAppender/file</code></td><td><code>C:\Logs\ContosoInsurance.Web.log</code></td><td>Static — <code>&lt;log4net&gt;</code></td><td>Hard-coded OS path</td></tr>
+<tr><td><code>log4net/FileAppender/maximumFileSize</code></td><td><code>10MB</code></td><td>Static</td><td></td></tr>
+<tr><td><code>log4net/FileAppender/maxSizeRollBackups</code></td><td><code>5</code></td><td>Static</td><td></td></tr>
+<tr><td><code>log4net/root/level</code></td><td><code>INFO</code></td><td>Static</td><td></td></tr>
+</tbody></table></div>
+<h3 id="contosoinsuranceservices-webconfig">ContosoInsurance.Services (<code>Web.config</code>)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key</th><th>Default Value</th><th>Profile / Source</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>ScoringModelVersion</code></td><td><code>v1.3</code></td><td>Static — <code>&lt;appSettings&gt;</code></td><td>Scoring algorithm version</td></tr>
+<tr><td><code>ContosoDb</code> (connection string)</td><td><code>Server=.;Database=ContosoInsurance;User Id=contoso_app;Password=[MASKED];</code></td><td>Static — <code>&lt;connectionStrings&gt;</code></td><td>SQL auth with plaintext password</td></tr>
+<tr><td><code>compilation/@debug</code></td><td><code>true</code></td><td>Static — <code>&lt;system.web&gt;</code></td><td>Should be <code>false</code> in production</td></tr>
+<tr><td><code>compilation/@targetFramework</code></td><td><code>4.6.1</code></td><td>Static</td><td></td></tr>
+<tr><td><code>serviceDebug/@includeExceptionDetailInFaults</code></td><td><code>true</code></td><td>Static — <code>&lt;system.serviceModel&gt;</code></td><td>Exposes internal fault details; unsafe for production</td></tr>
+<tr><td><code>serviceMetadata/@httpGetEnabled</code></td><td><code>true</code></td><td>Static</td><td>Enables WSDL at <code>?wsdl</code> URL</td></tr>
+<tr><td><code>basicHttpBinding/ClaimScoringSoap/@maxReceivedMessageSize</code></td><td><code>1048576</code> (1 MB)</td><td>Static — <code>&lt;bindings&gt;</code></td><td>WCF message size limit</td></tr>
+</tbody></table></div>
+<h3 id="contosoinsuranceworker-appconfig">ContosoInsurance.Worker (<code>App.config</code>)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key</th><th>Default Value</th><th>Profile / Source</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>ExportRoot</code></td><td><code>C:\Exports</code></td><td>Static — <code>&lt;appSettings&gt;</code></td><td>Output directory for CSV exports</td></tr>
+<tr><td><code>ExportIntervalMinutes</code></td><td><code>60</code></td><td>Static — <code>&lt;appSettings&gt;</code></td><td>Timer interval for export runs; read via <code>ConfigHelper.GetInt</code></td></tr>
+<tr><td><code>ContosoDb</code> (connection string)</td><td><code>Server=.;Database=ContosoInsurance;User Id=contoso_app;Password=[MASKED];</code></td><td>Static — <code>&lt;connectionStrings&gt;</code></td><td>SQL auth with plaintext password</td></tr>
+<tr><td><code>startup/supportedRuntime/@version</code></td><td><code>v4.0</code></td><td>Static — <code>&lt;startup&gt;</code></td><td></td></tr>
+<tr><td><code>startup/supportedRuntime/@sku</code></td><td><code>.NETFramework,Version=v4.6.1</code></td><td>Static</td><td></td></tr>
+<tr><td><code>log4net/FileAppender/file</code></td><td><code>C:\Logs\ContosoInsurance.Worker.log</code></td><td>Static — <code>&lt;log4net&gt;</code></td><td>Hard-coded OS path</td></tr>
+<tr><td><code>log4net/FileAppender/maximumFileSize</code></td><td><code>10MB</code></td><td>Static</td><td></td></tr>
+<tr><td><code>log4net/FileAppender/maxSizeRollBackups</code></td><td><code>5</code></td><td>Static</td><td></td></tr>
+<tr><td><code>log4net/root/level</code></td><td><code>INFO</code></td><td>Static</td><td></td></tr>
+</tbody></table></div>
+<hr/>
+<h2 id="startup-parameters-resource-requirements">Startup Parameters &amp; Resource Requirements</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Runtime Options</th><th>Memory / CPU</th><th>Instance Notes</th></tr></thead><tbody>
+<tr><td><strong>ContosoInsurance.Web</strong></td><td>Hosted by IIS / IIS Express; no explicit startup parameters</td><td>IIS application pool defaults (typically 1–4 GB virtual)</td><td>Single IIS site; no load-balancer config present</td></tr>
+<tr><td><strong>ContosoInsurance.Services</strong></td><td>Hosted by IIS / IIS Express (WCF <code>.svc</code>); <code>aspNetCompatibilityEnabled=true</code></td><td>IIS application pool defaults</td><td>Can share app pool with Web or run separately</td></tr>
+<tr><td><strong>ContosoInsurance.Worker</strong></td><td>Windows Service (<code>ServiceBase.Run</code>); <code>supportedRuntime v4.0 / .NETFramework 4.6.1</code></td><td>OS process defaults; no explicit limits</td><td>Single instance; timer-driven (60-min interval)</td></tr>
+</tbody></table></div>
+<p>&gt; Note: No JVM heap settings, Docker resource limits, Kubernetes resource requests/limits, or cloud deployment sizing configurations were found.</p>
+<hr/>
+<h2 id="startup-dependency-chain">Startup Dependency Chain</h2>
+<pre><code>
+SQL Server (ContosoInsurance DB)
+  └─► ContosoInsurance.Services  (WCF — must be reachable before Web processes claims)
+        └─► ContosoInsurance.Web   (ASP.NET WebForms — calls ClaimScoringEndpoint on form submit)
+
+SQL Server (ContosoInsurance DB)
+  └─► ContosoInsurance.Worker    (Windows Service — reads claims on startup and every 60 minutes)
+</code></pre>
+<div class="table-wrap"><table><thead><tr>
+<th>Dependency</th><th>Mechanism</th><th>Timeout / Retry</th></tr></thead><tbody>
+<tr><td>SQL Server availability</td><td>ADO.NET connection at first repository call</td><td>Default SqlClient connection timeout (30 s); no retry logic</td></tr>
+<tr><td>WCF <code>ClaimScoringService</code></td><td>Hard-coded URL in <code>ClaimScoringEndpoint</code>; called synchronously from Web</td><td>Default WCF send timeout (1 min); no retry or circuit breaker</td></tr>
+</tbody></table></div>
+<p>&gt; No <code>dockerize</code>, Kubernetes readiness probes, Spring Cloud Config retry, or <code>depends_on</code> health-check mechanisms are present.</p>
+<hr/>
+<h2 id="secrets-sensitive-configuration">Secrets &amp; Sensitive Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Secret Reference</th><th>Type</th><th>Storage</th><th>Location</th></tr></thead><tbody>
+<tr><td><code>ContosoDb</code> Password</td><td>SQL Server credential</td><td><strong>Plaintext in source-controlled XML</strong></td><td><code>ContosoInsurance.Web/Web.config</code></td></tr>
+<tr><td><code>ContosoDb</code> Password</td><td>SQL Server credential</td><td><strong>Plaintext in source-controlled XML</strong></td><td><code>ContosoInsurance.Services/Web.config</code></td></tr>
+<tr><td><code>ContosoDb</code> Password</td><td>SQL Server credential</td><td><strong>Plaintext in source-controlled XML</strong></td><td><code>ContosoInsurance.Worker/App.config</code></td></tr>
+<tr><td><code>machineKey validationKey</code></td><td>ASP.NET forms-auth / view-state signing key</td><td><code>AutoGenerate</code> per machine — not rotatable across multiple servers</td><td><code>ContosoInsurance.Web/Web.config</code></td></tr>
+<tr><td><code>machineKey decryptionKey</code></td><td>ASP.NET forms-auth ticket encryption key</td><td><code>AutoGenerate</code> per machine</td><td><code>ContosoInsurance.Web/Web.config</code></td></tr>
+</tbody></table></div>
+<h3 id="secrets-provisioning-workflow">Secrets Provisioning Workflow</h3>
+<p>There is <strong>no automated secrets provisioning workflow</strong>. Secrets are managed manually:</p>
+<ol>
+<li>A developer or operator edits <code>Web.config</code> / <code>App.config</code> directly on the deployment machine.</li>
+<li>The SQL password (<code>P@ssw0rd!</code>) is embedded in plaintext in all three config files and committed to source control.</li>
+<li>There is no integration with Azure Key Vault, HashiCorp Vault, AWS Secrets Manager, DPAPI-encrypted config sections, or Jasypt.</li>
+<li>The <code>machineKey</code> uses <code>AutoGenerate,IsolateApps</code> — this generates a per-machine key at runtime, which breaks forms-authentication tickets and view-state when deploying to more than one server (web farm scenarios).</li>
+</ol>
+<p>&gt; <strong>Modernization note</strong>: All three connection strings should be migrated to Managed Identity (Azure SQL) or pulled from Azure Key Vault / environment variables injected at deploy time, removing the plaintext password from source control entirely.</p>
+<hr/>
+<h2 id="feature-flags">Feature Flags</h2>
+<p>No feature flag framework is present in the solution. No LaunchDarkly, Unleash, <code>Microsoft.FeatureManagement</code>, Spring Feature Flags, <code>@ConditionalOnProperty</code>, or custom toggle mechanisms were found.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Flag Name</th><th>Default</th><th>Controlled By</th></tr></thead><tbody>
+<tr><td><em>(none)</em></td><td>—</td><td>—</td></tr>
+</tbody></table></div>
+<hr/>
+<h2 id="framework-runtime-versions">Framework &amp; Runtime Versions</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Version</th><th>Source</th></tr></thead><tbody>
+<tr><td>.NET Framework (target)</td><td>4.6.1</td><td>All <code>*.csproj</code> — <code>&lt;TargetFrameworkVersion&gt;v4.6.1&lt;/TargetFrameworkVersion&gt;</code></td></tr>
+<tr><td>ASP.NET Web Forms</td><td>4.6.1</td><td><code>ContosoInsurance.Web.csproj</code> — <code>ProjectTypeGuids</code> includes Web Application GUID</td></tr>
+<tr><td>WCF (Windows Communication Foundation)</td><td>4.6.1 (inbox)</td><td><code>ContosoInsurance.Services.csproj</code> — <code>System.ServiceModel</code> reference</td></tr>
+<tr><td>Windows Service</td><td>4.6.1 (inbox)</td><td><code>ContosoInsurance.Worker.csproj</code> — <code>System.ServiceProcess</code> reference</td></tr>
+<tr><td>MSBuild</td><td>ToolsVersion 15.0</td><td>All <code>*.csproj</code></td></tr>
+<tr><td>log4net</td><td>2.0.8</td><td><code>packages.config</code> — <code>ContosoInsurance.Web</code>, <code>Services</code>, <code>Worker</code>, <code>Common</code></td></tr>
+<tr><td>Newtonsoft.Json</td><td>11.0.2</td><td><code>packages.config</code> — <code>ContosoInsurance.Web</code>, <code>Common</code></td></tr>
+<tr><td>System.Configuration</td><td>4.6.1 (inbox)</td><td>Referenced in Web, Services, Worker, Common <code>.csproj</code> files</td></tr>
+<tr><td>System.Data (ADO.NET)</td><td>4.6.1 (inbox)</td><td>Referenced in <code>ContosoInsurance.Data.csproj</code></td></tr>
+<tr><td>NuGet (package management)</td><td><code>packages.config</code> format</td><td>Pre-SDK-style projects; no <code>PackageReference</code> format</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div id="tab-workflows" class="tab-panel">
+  <div class="fact-content"><h1 id="core-business-workflows">Core Business Workflows</h1>
+<p>ContosoInsurance is a legacy insurance claims processing portal that allows agents and adjusters to file, review, score, and export insurance claims across Auto, Home, and Life product lines.</p>
+<h2 id="domain-entities">Domain Entities</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity</th><th>Service / Bounded Context</th><th>Description</th><th>Key Relationships</th></tr></thead><tbody>
+<tr><td>User</td><td>Identity &amp; Access</td><td>An internal staff member (Agent, Adjuster, Admin) who operates the portal</td><td>Authenticated via Forms Authentication; role determines access level</td></tr>
+<tr><td>Policy</td><td>Policy Management</td><td>An insurance contract held by a customer, covering a specific product line (Auto, Home, Life)</td><td>A Policy has many Claims; Claims reference their Policy by PolicyId and PolicyNumber</td></tr>
+<tr><td>Claim</td><td>Claims Management</td><td>A request for indemnification filed against a policy, progressing through a status lifecycle (Pending → Approved / Rejected → Paid)</td><td>Belongs to one Policy; may have one Document attached; may have a Score assigned by the Scoring Service</td></tr>
+</tbody></table></div>
+<h2 id="service-to-domain-mapping">Service-to-Domain Mapping</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Domain Context</th><th>Owned Entities</th><th>External Dependencies</th></tr></thead><tbody>
+<tr><td>ContosoInsurance.Web (ASP.NET WebForms)</td><td>Claims Management, Identity &amp; Access</td><td>Claim (read/write/score), Policy (read), User (authenticate)</td><td>ClaimScoringService (WCF/SOAP over HTTP), SQL Server database, local file system (C:\ClaimsFiles)</td></tr>
+<tr><td>ContosoInsurance.Services (WCF SOAP)</td><td>Claim Scoring</td><td>Claim (read/update score)</td><td>SQL Server database</td></tr>
+<tr><td>ContosoInsurance.Worker (Windows Service)</td><td>Claims Reporting</td><td>Claim (read)</td><td>SQL Server database, local file system (C:\Exports)</td></tr>
+<tr><td>ContosoInsurance.Data (ADO.NET Library)</td><td>Shared Data Access</td><td>User, Policy, Claim</td><td>SQL Server (ContosoDb)</td></tr>
+<tr><td>ContosoInsurance.Common (Class Library)</td><td>Cross-Cutting</td><td>—</td><td>System.Configuration (Web.config/App.config), log4net</td></tr>
+</tbody></table></div>
+<h2 id="primary-workflows">Primary Workflows</h2>
+<h3 id="workflow-1-agent-login">Workflow 1: Agent Login</h3>
+<p>An internal user navigates to the portal and authenticates before accessing any claim functionality.</p>
+<ol>
+<li>User submits username and password via <code>Login.aspx</code>.</li>
+<li><code>UserRepository.FindByUsername</code> queries the database for the matching user record.</li>
+<li><code>UserRepository.VerifyPassword</code> recomputes SHA-1(password + salt) and compares it to the stored hash.</li>
+<li>On success, <code>FormsAuthentication.SetAuthCookie</code> issues a session cookie and redirects the user to the originally requested page.</li>
+<li>On failure, an error message is displayed and the attempt is logged as a warning.</li>
+</ol>
+<h3 id="workflow-2-claim-dashboard-and-on-demand-scoring">Workflow 2: Claim Dashboard and On-Demand Scoring</h3>
+<p>The default portal page displays recent claims and triggers scoring for any claim that has not yet been evaluated.</p>
+<ol>
+<li>Agent navigates to <code>Default.aspx</code>.</li>
+<li><code>ClaimsRepository.GetRecent(50)</code> fetches the 50 most recently filed claims (joined with Policy for the policy number).</li>
+<li>For each claim without a <code>Score</code>:</li>
+</ol>
+<ul>
+<ul>
+<li>A WCF channel is opened to the <code>ClaimScoringService</code> endpoint (configured via <code>ClaimScoringEndpoint</code> app setting).</li>
+<li><code>IClaimScoringService.ScoreClaim(claimId)</code> is invoked synchronously.</li>
+<li>The returned score is persisted via <code>ClaimsRepository.UpdateScore</code>.</li>
+<li>Scoring failures are caught and logged; the claim is still displayed without a score.</li>
+</ul>
+</ul>
+<ol>
+<li>The enriched claim list is bound to a data grid and rendered to the agent.</li>
+</ol>
+<h3 id="workflow-3-claim-document-upload">Workflow 3: Claim Document Upload</h3>
+<p>An agent attaches a supporting document (e.g., photos, repair estimates) to an existing claim.</p>
+<ol>
+<li>Agent opens <code>Upload.aspx</code>, enters the Claim ID, and selects a file.</li>
+<li>File size is validated against <code>MaxUploadBytes</code> (default 10 MB); oversized files are rejected.</li>
+<li>A folder is created at <code>ClaimDocumentsRoot\{claimId}\</code> (default: <code>C:\ClaimsFiles\{claimId}\</code>).</li>
+<li>The file is saved using the original client-supplied filename.</li>
+<li>The saved path is logged; a confirmation message is displayed to the agent.</li>
+</ol>
+<p>&gt; Note: The document path is stored in the <code>Claim.DocumentPath</code> field when the claim is inserted, but the upload workflow does not update this field post-upload.</p>
+<h3 id="workflow-4-scheduled-claims-export-windows-service">Workflow 4: Scheduled Claims Export (Windows Service)</h3>
+<p>A background Windows Service periodically exports claim data to CSV files for downstream reporting or archival.</p>
+<ol>
+<li><code>ClaimsExporterService</code> starts (or restarts) and immediately runs an initial export.</li>
+<li>A <code>System.Timers.Timer</code> fires at the configured interval (<code>ExportIntervalMinutes</code>, default 60 minutes).</li>
+<li><code>ClaimsRepository.GetRecent(1000)</code> retrieves the 1,000 most recent claims.</li>
+<li>A timestamped CSV file (<code>claims-YYYYMMDD-HHmmss.csv</code>) is written to the <code>ExportRoot</code> directory (default: <code>C:\Exports\</code>).</li>
+<li>Columns exported: ClaimId, PolicyNumber, ClaimantName, Amount, Status, FiledOn, Score.</li>
+<li>Errors during export are caught and logged; the timer continues for the next scheduled run.</li>
+</ol>
+<h2 id="cross-service-data-flows">Cross-Service Data Flows</h2>
+<p><strong>Web Portal → WCF Scoring Service</strong></p>
+<p>The Web portal (<code>Default.aspx</code>) acts as the orchestrator for claim scoring. For each unscored claim displayed on the dashboard, the portal opens a <code>BasicHttpBinding</code> WCF channel to <code>ClaimScoringService</code>, calls <code>ScoreClaim</code>, and writes the result back to the database. The WCF service independently re-fetches the claim from the database to compute the score. There is no shared in-memory state — both sides use the same SQL Server database as the source of truth.</p>
+<p>Fallback behavior: if the WCF call fails (network error, service unavailable), the exception is caught and logged. The claim is shown on the dashboard without a score; scoring is retried on the next page load.</p>
+<p><strong>Web Portal → File System (Documents)</strong></p>
+<p>Document upload writes directly to a UNC-style local path (<code>C:\ClaimsFiles\{claimId}\{filename}</code>). There is no document registry or database reference updated at upload time, so the file system is the de-facto document store, decoupled from the claims database record.</p>
+<p><strong>Windows Service → File System (Exports)</strong></p>
+<p>The Worker service reads directly from SQL Server and writes CSV files to a local export path (<code>C:\Exports\</code>). No message queue or API mediates this flow; the service is entirely self-contained.</p>
+<h2 id="business-workflow-sequence">Business Workflow Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant Agent
+    participant Web as "Web Portal (Default.aspx)"
+    participant DB as "SQL Server"
+    participant WCF as "ClaimScoringService (WCF)"
+
+    Agent->>Web: Navigate to dashboard (GET /)
+    Web->>DB: GetRecent(50) - fetch latest claims with policy info
+    DB-->>Web: List of Claims (some without Score)
+
+    loop For each unscored claim
+        Web->>WCF: ScoreClaim(claimId) via BasicHttpBinding
+        WCF->>DB: GetById(claimId)
+        DB-->>WCF: Claim record
+        WCF->>WCF: Apply scoring rules (base 500, amount, status, age)
+        WCF-->>Web: Score (0-1000)
+        alt Score returned successfully
+            Web->>DB: UpdateScore(claimId, score)
+        else WCF unavailable or error
+            Note over Web: Log error, continue without score
+        end
+    end
+
+    Web-->>Agent: Render claims grid with scores
+
+    Agent->>Web: Upload document (POST /Upload.aspx)
+    Web->>Web: Validate file size (max 10 MB)
+    alt File within size limit
+        Web->>Web: Save file to C:\ClaimsFiles\{claimId}\{filename}
+        Web-->>Agent: Confirmation with saved path
+    else File too large
+        Web-->>Agent: "File too large" error message
+    end
+</div>
+<h2 id="business-rules-decision-logic">Business Rules &amp; Decision Logic</h2>
+<h3 id="claim-scoring-rules">Claim Scoring Rules</h3>
+<p>The <code>ClaimScoringService</code> computes a risk score (0–1000) using deterministic weighted rules:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Rule</th><th>Condition</th><th>Score Adjustment</th></tr></thead><tbody>
+<tr><td>Base score</td><td>Always</td><td>+500</td></tr>
+<tr><td>High-value claim</td><td>Amount &gt; $10,000</td><td>−150</td></tr>
+<tr><td>Standard-value claim</td><td>Amount ≤ $10,000</td><td>+50</td></tr>
+<tr><td>Non-pending status</td><td>Status ≠ &quot;Pending&quot;</td><td>−25</td></tr>
+<tr><td>Aged claim</td><td>Filed more than 30 days ago</td><td>−75</td></tr>
+<tr><td>Recent claim</td><td>Filed within 30 days</td><td>+25</td></tr>
+<tr><td>Score bounds</td><td>Always</td><td>Clamped to [0, 1000]</td></tr>
+</tbody></table></div>
+<h3 id="claim-status-lifecycle">Claim Status Lifecycle</h3>
+<p>Claims progress through the following statuses:</p>
+<p><code>Pending</code> → <code>Approved</code> or <code>Rejected</code> → <code>Paid</code></p>
+<ul>
+<li>New claims are inserted with status <code>Pending</code> (default applied in <code>ClaimsRepository.Insert</code> if not provided).</li>
+<li><code>ClosedOn</code> is set when a claim transitions out of the active state.</li>
+</ul>
+<h3 id="file-upload-constraints">File Upload Constraints</h3>
+<ul>
+<li>Maximum file size: configurable via <code>MaxUploadBytes</code> (default 10 MB).</li>
+<li>Upload target directory: configurable via <code>ClaimDocumentsRoot</code> (default <code>C:\ClaimsFiles</code>).</li>
+<li>Sub-folder per claim ID is created automatically.</li>
+</ul>
+<h3 id="policy-product-lines">Policy Product Lines</h3>
+<p>Policies are categorized into three product lines: <strong>Auto</strong>, <strong>Home</strong>, and <strong>Life</strong>. Product line is a free-text field on the Policy entity with no enforced enumeration in application code.</p>
+<h3 id="user-roles">User Roles</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Role</th><th>Description</th></tr></thead><tbody>
+<tr><td>Agent</td><td>Files claims and uploads documents on behalf of policyholders</td></tr>
+<tr><td>Adjuster</td><td>Reviews and scores claims; determines approval or rejection</td></tr>
+<tr><td>Admin</td><td>Full access; manages users and system configuration</td></tr>
+</tbody></table></div>
+<p>Role is stored as a string on the <code>User</code> entity. No role-based authorization gates are enforced programmatically in the Web project code (authorization relies on Forms Authentication session only).</p>
+<h3 id="export-scheduling">Export Scheduling</h3>
+<ul>
+<li>Export interval: configurable via <code>ExportIntervalMinutes</code> (default 60 minutes).</li>
+<li>Export directory: configurable via <code>ExportRoot</code> (default <code>C:\Exports</code>).</li>
+<li>Export scope: top 1,000 most recently filed claims.</li>
+<li>A single export run failure does not stop subsequent scheduled runs.</li>
+</ul>
+<h3 id="cross-cutting-concerns">Cross-Cutting Concerns</h3>
+<ul>
+<li><strong>Transactions</strong>: No explicit database transactions are used. <code>Insert</code> and <code>UpdateScore</code> each execute as single atomic SQL statements. Multi-step operations (e.g., insert + score + update) are not wrapped in a transaction, creating a window for partial state.</li>
+<li><strong>Error handling</strong>: All scoring errors on the dashboard are caught and logged; the portal degrades gracefully by displaying unscored claims. Export errors are caught and logged by the Worker; the timer continues.</li>
+<li><strong>Audit/logging</strong>: All significant operations (claim insertion, score updates, document saves, export runs, login failures) are logged via <code>AppLogger</code> to log4net and <code>System.Diagnostics.Trace</code>.</li>
+<li><strong>Authentication</strong>: Forms Authentication cookie-based sessions. No role-based access control enforced in code; all authenticated users can access all pages.</li>
+</ul>
+</div>
+</div>
+<div id="tab-deps" class="tab-panel">
+  <div class="fact-content"><h1 id="dependency-map">Dependency Map</h1>
+<p>ContosoInsurance is a multi-module .NET Framework 4.6.1 solution comprising 5 projects. It declares 2 unique external NuGet packages alongside several built-in .NET Framework assemblies used as first-party dependencies.</p>
+<h2 id="dependencies">Dependencies</h2>
+<div class="mermaid">
+flowchart LR
+    App["ContosoInsurance"]
+
+    subgraph Web["Web Frameworks"]
+        WebForms["ASP.NET Web Forms net461"]
+        WCF["WCF System.ServiceModel net461"]
+    end
+
+    subgraph DB["Database / ORM"]
+        ADO["ADO.NET System.Data net461"]
+    end
+
+    subgraph Platform["Platform / Runtime"]
+        WinSvc["Windows Service System.ServiceProcess net461"]
+    end
+
+    subgraph Log["Logging"]
+        Log4Net["log4net v2.0.8"]
+    end
+
+    subgraph Util["Utilities"]
+        Newtonsoft["Newtonsoft.Json v11.0.2"]
+    end
+
+    App -->|"web"| Web
+    App -->|"persistence"| DB
+    App -->|"platform"| Platform
+    App -->|"logging"| Log
+    App -->|"utilities"| Util
+</div>
+<h3 id="dependency-summary">Dependency Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Category</th><th>Count</th><th>Key Libraries</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Web Frameworks</td><td>2</td><td>ASP.NET Web Forms, WCF System.ServiceModel</td><td>Legacy stack on .NET Framework 4.6.1; Web Forms and WCF have no equivalent in .NET 8+</td></tr>
+<tr><td>Database / ORM</td><td>1</td><td>ADO.NET System.Data</td><td>Raw ADO.NET with no ORM abstraction layer</td></tr>
+<tr><td>Platform / Runtime</td><td>1</td><td>Windows Service System.ServiceProcess</td><td>Windows-only hosting model; not portable to Linux containers</td></tr>
+<tr><td>Logging</td><td>1</td><td>log4net 2.0.8</td><td>Older logging library; last major release 2016</td></tr>
+<tr><td>Utilities</td><td>1</td><td>Newtonsoft.Json 11.0.2</td><td>JSON serialization; superseded by System.Text.Json in .NET 8</td></tr>
+</tbody></table></div>
+<h3 id="version-compatibility-risks">Version &amp; Compatibility Risks</h3>
+<p>.NET Framework 4.6.1 reached end of support in April 2022 and is not cross-platform. ASP.NET Web Forms and WCF (<code>System.ServiceModel</code>) have no direct equivalents in modern .NET (8+): Web Forms must be rewritten as ASP.NET Core MVC/Razor Pages or Blazor, and WCF services must be migrated to ASP.NET Core with gRPC or REST. The Windows Service worker (<code>System.ServiceProcess</code>) is Windows-only and must be converted to a .NET Generic Host Worker Service for cross-platform or containerized deployment. <code>log4net 2.0.8</code> (released 2016) has had no major updates and should be replaced with a modern alternative such as Microsoft.Extensions.Logging with Serilog or NLog. <code>Newtonsoft.Json 11.0.2</code> is several major versions behind the current release (13.x) and can be replaced by the built-in <code>System.Text.Json</code> in .NET 8.</p>
+<h3 id="notable-observations">Notable Observations</h3>
+<ul>
+<li><strong>No ORM in use</strong>: The Data layer uses raw ADO.NET (<code>System.Data</code>) with no abstraction like Entity Framework or Dapper, which increases migration effort when moving to a modern data access pattern.</li>
+<li><strong>WCF service dependency</strong>: <code>ContosoInsurance.Services</code> exposes a WCF endpoint (<code>ClaimScoringService.svc</code>) — a technology not supported on .NET 8 without CoreWCF and significant reconfiguration.</li>
+<li><strong>Windows-only hosting</strong>: Both the Worker (Windows Service) and Web projects depend on Windows-specific APIs (<code>System.ServiceProcess</code>, IIS/IIS Express), blocking containerization until these are replaced.</li>
+<li><strong>Minimal external NuGet footprint</strong>: Only 2 distinct NuGet packages are used (<code>log4net</code>, <code>Newtonsoft.Json</code>), making the external dependency migration surface small; the primary effort lies in replacing .NET Framework platform APIs.</li>
+</ul>
+<h2 id="test-dependencies">Test Dependencies</h2>
+<p>No test projects or test-scoped dependencies were detected in any of the 5 project files or their <code>packages.config</code> files.</p>
+<p>Total test-scope dependencies: 0</p>
+<p>No test framework (xUnit, NUnit, MSTest) or mocking library (Moq, NSubstitute) was found. The absence of automated tests represents a significant risk for any modernization effort, as there is no safety net to validate behaviour after changes.</p>
+</div>
+</div>
+<div id="tab-data" class="tab-panel">
+  <div class="fact-content"><h1 id="data-architecture-persistence-layer">Data Architecture &amp; Persistence Layer</h1>
+<p>The application persists data in a single Microsoft SQL Server database (<code>ContosoInsurance</code>) accessed via raw ADO.NET across three entities (Users, Policies, Claims) and one audit table (ExportLog); no ORM is used.</p>
+<h2 id="database-configuration">Database Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service / Module</th><th>DB Type</th><th>Profile</th><th>Driver</th><th>Connection</th><th>Migration Tool</th></tr></thead><tbody>
+<tr><td>ContosoInsurance.Data</td><td>Microsoft SQL Server</td><td>All (single profile)</td><td><code>System.Data.SqlClient</code> (ADO.NET)</td><td>Named connection string <code>ContosoDb</code> read from <code>Web.config</code> / <code>App.config</code> via <code>System.Configuration.ConfigurationManager</code></td><td>None — schema is managed by hand-authored SQL scripts (<code>db/001-schema.sql</code>, <code>db/002-seed.sql</code>). DDL is applied manually; the application does not run migrations at startup. See <code>configuration-inventory.md</code> for the raw connection-string key.</td></tr>
+</tbody></table></div>
+<h2 id="data-ownership-per-service">Data Ownership per Service</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Tables Owned</th><th>ORM Framework</th><th>Caching</th><th>Notes</th></tr></thead><tbody>
+<tr><td>ContosoInsurance.Data</td><td><code>dbo.Users</code>, <code>dbo.Policies</code>, <code>dbo.Claims</code>, <code>dbo.ExportLog</code></td><td>None — raw ADO.NET (<code>SqlConnection</code> / <code>SqlCommand</code>)</td><td>None</td><td>All three consumer projects (Web, Services, Worker) instantiate repository classes directly from this assembly. Logical data boundary, not physical schema separation.</td></tr>
+<tr><td>ContosoInsurance.Web</td><td>Reads/writes <code>dbo.Claims</code> via <code>ClaimsRepository</code></td><td>—</td><td>None</td><td>Web Forms page calls <code>ClaimsRepository.GetRecent</code> and <code>UpdateScore</code> on every page load.</td></tr>
+<tr><td>ContosoInsurance.Services</td><td>Reads <code>dbo.Claims</code> via <code>ClaimsRepository</code></td><td>—</td><td>None</td><td>WCF <code>ClaimScoringService</code> calls <code>ClaimsRepository.GetById</code> to score a claim.</td></tr>
+<tr><td>ContosoInsurance.Worker</td><td>Reads <code>dbo.Claims</code> via <code>ClaimsRepository</code></td><td>—</td><td>None</td><td><code>ClaimsExporterService</code> calls <code>ClaimsRepository.GetRecent(1000)</code> and writes CSV files to a local path. The <code>dbo.ExportLog</code> table exists in the schema but is not written by the current code.</td></tr>
+</tbody></table></div>
+<h2 id="entity-model">Entity Model</h2>
+<div class="mermaid">
+erDiagram
+    Policy ||--o{ Claim : "covers"
+    User {
+        int    UserId       PK
+        string Username     UK
+        string PasswordHash
+        string Salt
+        string Role
+    }
+    Policy {
+        int     PolicyId       PK
+        string  PolicyNumber   UK
+        string  HolderName
+        string  ProductLine
+        decimal CoverageAmount
+        date    EffectiveDate
+        date    ExpirationDate
+    }
+    Claim {
+        int     ClaimId      PK
+        int     PolicyId     FK
+        string  ClaimantName
+        decimal Amount
+        string  Status
+        date    FiledOn
+        date    ClosedOn
+        string  DocumentPath
+        int     Score
+        string  Notes
+    }
+    ExportLog {
+        int    ExportId   PK
+        date   ExportedAt
+        string FilePath
+        int    RowCount
+    }
+</div>
+<p><strong>Transaction management:</strong> No explicit transaction scope is configured. Each repository method opens and closes its own <code>SqlConnection</code>; there is no ambient <code>TransactionScope</code> or unit-of-work pattern.</p>
+<p><strong>Indexes:</strong> <code>IX_Claims_FiledOn DESC</code> exists on <code>dbo.Claims</code> to support the ordered <code>GetRecent</code> query.</p>
+<h2 id="key-repository-methods">Key Repository Methods</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Repository</th><th>Notable Methods</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>ContosoInsurance.Data</td><td><code>ClaimsRepository</code> (<code>ClaimsRepository.cs</code>)</td><td><code>GetRecent(int top = 50)</code></td><td>Returns the most recent N claims joined to <code>dbo.Policies</code>, ordered by <code>FiledOn DESC</code>. Used by Web dashboard and Worker export.</td></tr>
+<tr><td>ContosoInsurance.Data</td><td><code>ClaimsRepository</code></td><td><code>GetById(int claimId)</code></td><td>Single-row lookup by primary key, used by WCF scoring service.</td></tr>
+<tr><td>ContosoInsurance.Data</td><td><code>ClaimsRepository</code></td><td><code>SearchByClaimant(string namePart)</code></td><td><strong>Legacy SQL injection risk</strong> — user input is concatenated directly into the SQL string instead of using a parameterized query.</td></tr>
+<tr><td>ContosoInsurance.Data</td><td><code>ClaimsRepository</code></td><td><code>Insert(Claim claim)</code></td><td>Inserts a new claim and returns the new <code>ClaimId</code> via <code>SCOPE_IDENTITY()</code>.</td></tr>
+<tr><td>ContosoInsurance.Data</td><td><code>ClaimsRepository</code></td><td><code>UpdateScore(int claimId, int score)</code></td><td>Sets the <code>Score</code> column on a single claim row. Called after WCF scoring response.</td></tr>
+<tr><td>ContosoInsurance.Data</td><td><code>PolicyRepository</code> (<code>PolicyRepository.cs</code>)</td><td><code>GetAll()</code></td><td>Full table scan of <code>dbo.Policies</code>. No pagination.</td></tr>
+<tr><td>ContosoInsurance.Data</td><td><code>UserRepository</code> (<code>UserRepository.cs</code>)</td><td><code>FindByUsername(string username)</code></td><td>Parameterized lookup of a user by username for authentication.</td></tr>
+<tr><td>ContosoInsurance.Data</td><td><code>UserRepository</code></td><td><code>VerifyPassword(User user, string password)</code></td><td><strong>Legacy weak hashing</strong> — computes SHA1(password + salt) and compares; SHA1 is cryptographically inadequate for password storage.</td></tr>
+</tbody></table></div>
+<h2 id="caching-strategy">Caching Strategy</h2>
+<p>No caching layer is present in the application. There is no use of <code>System.Runtime.Caching</code>, <code>IMemoryCache</code>, <code>IDistributedCache</code>, Redis, or any second-level cache. Every request to retrieve data issues a new <code>SqlConnection</code> and SQL query.</p>
+<p><code>ConfigHelper</code> reads <code>Web.config</code> / <code>App.config</code> values at call-time with no in-process caching; configuration values are re-read on every invocation.</p>
+<h2 id="data-ownership-boundaries">Data Ownership Boundaries</h2>
+<p><strong>Shared database, shared schema:</strong> All modules connect to the same <code>ContosoInsurance</code> SQL Server database using the same named connection string (<code>ContosoDb</code>). There is no schema-per-service, no separate read/write replicas, and no event-sourcing or CQRS pattern.</p>
+<p><strong>Cross-service data access:</strong> <code>ContosoInsurance.Web</code>, <code>ContosoInsurance.Services</code>, and <code>ContosoInsurance.Worker</code> all take a direct dependency on <code>ContosoInsurance.Data</code> and instantiate repository classes in-process. There is no REST/message-based indirection between modules and the data layer — all data access is synchronous, in-process ADO.NET against the shared database.</p>
+<p><strong>Read/write patterns:</strong> The Web layer is the primary writer (claim intake via <code>Insert</code>). The WCF service performs a targeted single-row read and triggers a score write-back through the Web layer. The Worker performs a bulk read (<code>GetRecent(1000)</code>) for CSV export on a timer.</p>
+<h3 id="data-classification-sensitivity">Data Classification &amp; Sensitivity</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity</th><th>Sensitive Fields</th><th>Classification</th><th>Controls in Place</th></tr></thead><tbody>
+<tr><td><code>dbo.Users</code></td><td><code>Username</code>, <code>PasswordHash</code>, <code>Salt</code></td><td>PII — authentication credentials</td><td><code>PasswordHash</code> is stored (SHA1 + per-user salt). SHA1 is cryptographically weak; no modern KDF (PBKDF2, Argon2, bcrypt) is used. No field-level encryption or masking.</td></tr>
+<tr><td><code>dbo.Policies</code></td><td><code>HolderName</code>, <code>CoverageAmount</code></td><td>PII / financial</td><td><code>HolderName</code> is a natural-person name stored as plaintext <code>NVARCHAR</code>. No encryption-at-rest, no data masking, no access controls beyond database-level permissions.</td></tr>
+<tr><td><code>dbo.Claims</code></td><td><code>ClaimantName</code>, <code>Amount</code>, <code>DocumentPath</code></td><td>PII / financial</td><td><code>ClaimantName</code> is stored as plaintext. <code>DocumentPath</code> exposes local filesystem paths (<code>C:\ClaimsFiles\...</code>). No encryption-at-rest, no masking, no field-level access control.</td></tr>
+<tr><td><code>dbo.ExportLog</code></td><td><code>FilePath</code></td><td>Internal</td><td>Stores local file paths only. No personal data.</td></tr>
+</tbody></table></div>
+</div>
+</div>
+<p class="footer">Your feedback is invaluable &mdash; <a href="https://aka.ms/ghcp-appmod/feedback">Share feedback</a></p>
+<script>
+function toggleRow(rowId, triggerRow) {
+  var detail = document.getElementById(rowId);
+  var btn = document.getElementById('btn-' + rowId);
+  if (!detail) return;
+  var visible = detail.style.display !== 'none';
+  detail.style.display = visible ? 'none' : 'table-row';
+  if (btn) btn.classList.toggle('open', !visible);
+}
+(function() {
+  var nav = document.querySelector('.tab-nav');
+  if (!nav) return;
+  nav.addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    var targetId = btn.getAttribute('data-tab');
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var panel = document.getElementById(targetId);
+    if (panel) {
+      panel.classList.add('active');
+      // Render any mermaid diagrams in this panel that haven't been processed yet
+      if (window.__mermaidReady) { window.__renderMermaidIn(panel); }
+    }
+  });
+})();
+
+// ── Diagram lightbox ────────────────────────────────────────
+(function() {
+  var lightbox = document.getElementById('diagram-lightbox');
+  var inner = document.getElementById('diagram-lightbox-inner');
+  var closeBtn = document.getElementById('diagram-lightbox-close');
+  if (!lightbox || !inner || !closeBtn) return;
+
+  var scale = 1;
+  var translateX = 0;
+  var translateY = 0;
+  var isDragging = false;
+  var dragStartX = 0;
+  var dragStartY = 0;
+
+  function applyTransform() {
+    var svg = inner.querySelector('svg');
+    if (svg) {
+      svg.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ')';
+      svg.style.transformOrigin = 'center center';
+      svg.style.transition = 'none';
+    }
+  }
+
+  function resetTransform() {
+    scale = 1; translateX = 0; translateY = 0;
+    applyTransform();
+  }
+
+  function openLightbox(svgEl) {
+    inner.innerHTML = svgEl.outerHTML;
+    var injected = inner.querySelector('svg');
+    if (injected) {
+      injected.removeAttribute('width');
+      injected.removeAttribute('height');
+      injected.style.cursor = 'grab';
+    }
+    resetTransform();
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    inner.innerHTML = '';
+    document.body.style.overflow = '';
+    resetTransform();
+  }
+
+  inner.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    var delta = e.deltaY > 0 ? 0.9 : 1.1;
+    scale = Math.min(Math.max(scale * delta, 0.3), 8);
+    applyTransform();
+  }, { passive: false });
+
+  inner.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    isDragging = true;
+    dragStartX = e.clientX - translateX;
+    dragStartY = e.clientY - translateY;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grabbing'; }
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    translateX = e.clientX - dragStartX;
+    translateY = e.clientY - dragStartY;
+    applyTransform();
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grab'; }
+  });
+
+  inner.addEventListener('dblclick', function() { resetTransform(); });
+
+  document.addEventListener('click', function(e) {
+    var card = e.target.closest('.mermaid');
+    if (!card) return;
+    if (e.target.closest('.diagram-lightbox-close')) return;
+    var svg = card.querySelector('svg');
+    if (svg) { openLightbox(svg); }
+  });
+
+  closeBtn.addEventListener('click', closeLightbox);
+
+  lightbox.addEventListener('click', function(e) {
+    if (e.target === lightbox) { closeLightbox(); }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeLightbox(); }
+  });
+})();
+
+var _currentTarget = '';
+
+function toggleMultiSelect(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  // Close others
+  document.querySelectorAll('.multi-select.open').forEach(function(ms) { if (ms.id !== id) ms.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.multi-select')) {
+    document.querySelectorAll('.multi-select.open').forEach(function(ms) { ms.classList.remove('open'); });
+  }
+});
+
+function getMultiSelectValues(msId) {
+  var el = document.getElementById(msId);
+  if (!el) return [];
+  var checked = el.querySelectorAll('input[type=checkbox]:checked');
+  var vals = [];
+  for (var i = 0; i < checked.length; i++) vals.push(checked[i].value);
+  return vals;
+}
+
+function onMultiSelectChange(msId, label) {
+  var el = document.getElementById(msId);
+  if (!el) return;
+  var vals = getMultiSelectValues(msId);
+  var total = el.querySelectorAll('input[type=checkbox]').length;
+  var btn = el.querySelector('.multi-select-btn');
+  if (btn) {
+    btn.textContent = vals.length > 0 && vals.length < total ? label + ' (' + vals.length + ')' : label;
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  var selectedDomains = getMultiSelectValues('domain-ms');
+  var selectedCrits = getMultiSelectValues('criticality-ms');
+
+  // Domain filter: show/hide entire sections (empty = show all)
+  var sections = document.querySelectorAll('.issue-section');
+  for (var i = 0; i < sections.length; i++) {
+    var domain = sections[i].getAttribute('data-domain');
+    sections[i].style.display = (selectedDomains.length === 0 || selectedDomains.indexOf(domain) >= 0) ? '' : 'none';
+  }
+
+  // Row-level filtering: respect target + criticality
+  var rows = document.querySelectorAll('.issue-row');
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var section = row.closest('.issue-section');
+    if (section && section.style.display === 'none') {
+      row.style.display = 'none';
+      var next = row.nextElementSibling;
+      if (next && next.classList.contains('detail-row')) next.style.display = 'none';
+      continue;
+    }
+
+    // Check target filter
+    var show = true;
+    if (_currentTarget && row.hasAttribute('data-targets')) {
+      var targetsStr = row.getAttribute('data-targets');
+      if (targetsStr && targetsStr !== '{}') {
+        try {
+          var targets = JSON.parse(targetsStr);
+          if (Object.keys(targets).length > 0 && !targets[_currentTarget]) {
+            show = false;
+          }
+        } catch(e) {}
+      }
+    }
+
+    // Check criticality filter
+    if (show && selectedCrits.length > 0) {
+      var crit = row.getAttribute('data-criticality');
+      if (selectedCrits.indexOf(crit) < 0) show = false;
+    }
+
+    row.style.display = show ? '' : 'none';
+    var nextRow = row.nextElementSibling;
+    if (nextRow && nextRow.classList.contains('detail-row')) {
+      if (!show) nextRow.style.display = 'none';
+    }
+  }
+}
+
+function clearAllFilters() {
+  document.querySelectorAll('.multi-select input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+  var domainBtn = document.querySelector('#domain-ms .multi-select-btn');
+  if (domainBtn) domainBtn.textContent = 'Domain';
+  var critBtn = document.querySelector('#criticality-ms .multi-select-btn');
+  if (critBtn) critBtn.textContent = 'Criticality';
+  applyFilters();
+}
+
+function onTargetChange(targetId) {
+  _currentTarget = targetId;
+  var rows = document.querySelectorAll('.issue-row[data-targets]');
+  var totalEffort = 0;
+  var domainCrits = {}; // domain -> {mandatory:0, potential:0, optional:0}
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var targets = JSON.parse(row.getAttribute('data-targets'));
+    var section = row.closest('.issue-section');
+    var domain = section ? section.getAttribute('data-domain') : '';
+
+    if (!targets || Object.keys(targets).length === 0) {
+      // No target data (e.g. security) — always show
+      var sp = parseFloat(row.querySelector('.sp-cell').textContent) || 0;
+      totalEffort += sp;
+      if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+      var crit = row.getAttribute('data-criticality') || 'optional';
+      domainCrits[domain][crit] = (domainCrits[domain][crit] || 0) + 1;
+      continue;
+    }
+
+    var override = targets[targetId];
+    if (!override) {
+      // Issue doesn't apply to this target
+      continue;
+    }
+
+    // Apply severity override
+    var newSeverity = (override.severity || row.getAttribute('data-default-severity') || '').toLowerCase();
+    row.setAttribute('data-criticality', newSeverity);
+    var critCell = row.querySelector('.crit-cell');
+    if (critCell) {
+      var critText = newSeverity === 'mandatory' ? 'Mandatory' : newSeverity === 'potential' ? 'Potential' : 'Optional';
+      var cssClass = newSeverity === 'mandatory' ? 'crit-square-mandatory' : newSeverity === 'potential' ? 'crit-square-potential' : 'crit-square-optional';
+      critCell.innerHTML = '<span class="crit-label"><span class="crit-square ' + cssClass + '"></span>' + critText + '</span>';
+    }
+
+    // Apply effort override
+    var newEffort = override.effort !== undefined ? override.effort : parseFloat(row.getAttribute('data-default-effort')) || 0;
+    var spCell = row.querySelector('.sp-cell');
+    if (spCell) spCell.textContent = newEffort;
+    totalEffort += newEffort;
+
+    if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+    domainCrits[domain][newSeverity] = (domainCrits[domain][newSeverity] || 0) + 1;
+  }
+
+  // Also add security findings effort (they don't have per-target data)
+  var secSection = document.querySelector('.issue-section[data-domain="security"]');
+  if (secSection) {
+    var secRows = secSection.querySelectorAll('.issue-row');
+    for (var j = 0; j < secRows.length; j++) {
+      if (!secRows[j].hasAttribute('data-targets') || secRows[j].getAttribute('data-targets') === '') {
+        var sp = parseFloat(secRows[j].querySelector('.sp-cell').textContent) || 0;
+        totalEffort += sp;
+        if (!domainCrits['security']) domainCrits['security'] = {mandatory:0,potential:0,optional:0};
+        var sc = secRows[j].getAttribute('data-criticality') || 'optional';
+        domainCrits['security'][sc] = (domainCrits['security'][sc] || 0) + 1;
+      }
+    }
+  }
+
+  // Update effort display
+  var label = totalEffort < 20 ? 'S' : totalEffort < 50 ? 'M' : totalEffort < 100 ? 'L' : 'XL';
+  var effortEl = document.getElementById('effort-display');
+  if (effortEl) effortEl.textContent = label + ' (total story points: ' + totalEffort + ')';
+
+  // Update donut charts
+  updateDonuts(domainCrits);
+
+  // Re-apply domain/criticality filters
+  applyFilters();
+}
+
+function updateDonuts(domainCrits) {
+  var container = document.getElementById('donut-container');
+  if (!container) return;
+  container.innerHTML = '';
+  var domainNames = {'cloud-readiness':'Cloud Readiness','java-upgrade':'Java Upgrade','dotnet-upgrade':'DotNET Upgrade','security':'Security'};
+  var domainOrder = ['cloud-readiness','java-upgrade','dotnet-upgrade','security'];
+  for (var d = 0; d < domainOrder.length; d++) {
+    var key = domainOrder[d];
+    var c = domainCrits[key];
+    if (!c || (c.mandatory + c.potential + c.optional) === 0) continue;
+    var total = c.mandatory + c.potential + c.optional;
+    var div = document.createElement('div');
+    div.className = 'domain-summary-item';
+    div.innerHTML = buildDonutSvg(c.mandatory, c.potential, c.optional) +
+      '<h3>' + domainNames[key] + '</h3>' +
+      '<div class="count">' + total + ' issue' + (total !== 1 ? 's' : '') + '</div>';
+    container.appendChild(div);
+  }
+}
+
+function buildDonutSvg(m, p, o) {
+  var total = m + p + o;
+  if (total === 0) return '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;"><circle cx="50" cy="50" r="35" fill="none" stroke="#d0d7de" stroke-width="15" opacity="0.5"/></svg>';
+  var r = 35, circ = 2 * Math.PI * r, offset = 0;
+  var svg = '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">';
+  var segs = [{c:m,color:'var(--color-mandatory)'},{c:p,color:'var(--color-potential)'},{c:o,color:'var(--color-optional)'}];
+  for (var i = 0; i < segs.length; i++) {
+    if (segs[i].c === 0) continue;
+    var segLen = (segs[i].c / total) * circ;
+    var gap = total > segs[i].c ? 1.5 : 0;
+    var drawLen = Math.max(segLen - gap, 0.5);
+    svg += '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + segs[i].color + '" stroke-width="15" stroke-dasharray="' + drawLen.toFixed(2) + ' ' + circ.toFixed(2) + '" stroke-dashoffset="' + (-offset).toFixed(2) + '"/>';
+    offset += segLen;
+  }
+  svg += '</svg>';
+  return svg;
+}
+</script>
+<script>document.addEventListener('DOMContentLoaded', function() { onTargetChange('AppService.Windows'); });</script>
+</div></body></html>
