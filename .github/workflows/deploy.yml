@@ -46,8 +46,22 @@ jobs:
         working-directory: src/ContosoInsurance
         run: dotnet test ContosoInsurance.sln --configuration Release --no-build
 
+      # Deploy secrets/vars (AZURE_CLIENT_ID etc.) aren't configured yet in this repo — skip the
+      # Azure steps instead of failing the whole run until OIDC federation is set up. Once the
+      # secrets/vars below are added, these steps activate automatically on the next push.
+      - name: Check Azure deploy secrets are configured
+        id: azure-config
+        run: |
+          if [ -n "${AZURE_CLIENT_ID:-}" ] && [ -n "${AZURE_TENANT_ID:-}" ] && [ -n "${AZURE_SUBSCRIPTION_ID:-}" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Skipping Azure login/deploy — AZURE_CLIENT_ID/AZURE_TENANT_ID/AZURE_SUBSCRIPTION_ID secrets are not set on this repo yet. See docs/README-DEPLOY.md."
+          fi
+
       # OIDC exchanges GitHub's short-lived identity token for Azure access, so no client secret is required.
       - name: Login to Azure with OIDC
+        if: steps.azure-config.outputs.configured == 'true'
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -55,10 +69,12 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Install Azure Developer CLI
+        if: steps.azure-config.outputs.configured == 'true'
         uses: Azure/setup-azd@v2
 
       # azd needs an active environment in CI, so re-select it when it exists or create it once from repo variables.
       - name: Select or create azd environment
+        if: steps.azure-config.outputs.configured == 'true'
         working-directory: src/ContosoInsurance
         env:
           AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
@@ -82,7 +98,7 @@ jobs:
 
       # Keep first-time infrastructure creation manual so regular main pushes only redeploy the app.
       - name: Provision Azure infrastructure
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.provision == 'true' }}
+        if: ${{ steps.azure-config.outputs.configured == 'true' && github.event_name == 'workflow_dispatch' && github.event.inputs.provision == 'true' }}
         working-directory: src/ContosoInsurance
         env:
           AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
@@ -95,6 +111,7 @@ jobs:
         run: azd provision --no-prompt
 
       - name: Deploy application
+        if: steps.azure-config.outputs.configured == 'true'
         working-directory: src/ContosoInsurance
         env:
           AZURE_CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
